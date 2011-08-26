@@ -1,50 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 
-  <head>
+	<head>
+		<meta charset="utf-8"/>
+		
     <title>Encloader</title>
-    
+		
+    <!--[if lt IE 9]>
+			<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+		<link rel="stylesheet" media="all" href="css/lessframework.css"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<!-- Adding "maximum-scale=1" fixes the Mobile Safari auto-zoom bug: http://filamentgroup.com/examples/iosScaleBug/ -->
+	
     <script src="blackbirdjs/blackbird.js"></script>
     <link type="text/css" rel="stylesheet" href="blackbirdjs/blackbird.css" />
     
-    <link href="css/todos.css" media="all" rel="stylesheet" type="text/css"/>
+    <link type="text/css" rel="stylesheet" href="css/todos.css" />
     <script src="js/json2.js"></script>
     <script src="js/jquery.js"></script>
     <script src="js/underscore.js"></script>
     <script src="js/backbone.js"></script>
     <script src="js/backbone-localstorage.js"></script>
     <script src="js/todos.js"></script>
+  
   </head>
+	
+	<body lang="en">
+		
+    <h1><!--Encloader--> </h1>
 
-  <body>
 
-    <!-- Todo App Interface -->
-
-    <div id="todoapp">
-
-      <div class="title">
-        <h1>Encloader</h1>
-      </div>
-
-      <div class="content">
-
-        <div class="add-encoder">
-          <label>Add an encoder
-            <select id="add-encoder">
-              <option>Choose:</option>
-            </select>
-          </label>
-        </div>
-        
-        <div id="todos">
-          <ul id="todo-list"></ul>
-        </div>
-
-        <div id="todo-stats"></div>
-
-      </div>
-
-    </div>
 
     <!-- Templates -->
 
@@ -52,39 +38,36 @@
       <option value="<%= value %>"><%= text %></option>
     </script>
     
-    <script type="text/template" id="item-template">
-      <div class="todo <%= done ? 'done' : '' %>">
-        <div class="display">
-          <input class="check" type="checkbox" <%= done ? 'checked="checked"' : '' %> />
-          <div class="todo-content"></div>
-          <span class="todo-destroy"></span>
-          <label>Add an uploader
-            <select class="add-uploader">
-              <option>Choose:</option>
-              <% _.each(availUploaders, function(uploader) { %>
-                <option value="">&nbsp;&nbsp;<%= uploader.source %> / <%= uploader.name %></option>
-              <% }); %>
-            </select>
-          </label>
+    <script type="text/template" id="encoder-template">
+      <div class="encoder">
+        <div>
+          <%= availEncoders[encoder].source %> /
+          <%= availEncoders[encoder].name %>
         </div>
+        <span class="destroy"></span>
       </div>
     </script>
-
-    <script type="text/template" id="stats-template">
-      <% if (total) { %>
-        <span class="todo-count">
-          <span class="number"><%= remaining %></span>
-          <span class="word"><%= remaining == 1 ? 'item' : 'items' %></span> left.
-        </span>
-      <% } %>
-      <% if (done) { %>
-        <span class="todo-clear">
-          <a href="#">
-            Clear <span class="number-done"><%= done %></span>
-            completed <span class="word-done"><%= done == 1 ? 'item' : 'items' %></span>
-          </a>
-        </span>
-      <% } %>
+              
+    <script type="text/template" id="encoder-list-template">
+      <label>Add an encoder
+        <select class="add-encoder">
+        </select>
+      </label>
+      <ul class="encoder-list"></ul>
+    </script>
+              
+    <script type="text/template" id="uploader-list-template">
+      <label>Add an uploader
+        <select class="add-uploader">
+        </select>
+      </label>
+      <ul class="uploader-list"></ul>
+    </script>
+    
+    <script type="text/template" id="uploader-template">
+      <%= availUploaders[uploader].source %> /
+      <%= availUploaders[uploader].name %>
+      <span class="destroy"></span>
     </script>
 
   </body>

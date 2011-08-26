@@ -8,6 +8,8 @@ $(function(){
 
   var selectText = "Choose:";
   
+  var option_template = _.template($('#option-template').html());
+
   var getSources = function() {
     var sources = [];
     if (1) {
@@ -27,6 +29,10 @@ $(function(){
             }
           ],
           uploaders: [
+            {
+              name: "Desktop",
+              path: "~/Desktop"
+            },
             {
               name: "Example FTP",
               host: "ftp.example.com",
@@ -56,7 +62,6 @@ $(function(){
     });
     return encoders;
   };
-  var encoders = getEncoders();
 
   var getUploaders = function() {
     var uploaders = [];
@@ -67,79 +72,100 @@ $(function(){
     });
     return uploaders;
   };
-  var uploaders = getUploaders();
 
-  // this should go inside a View but for now since this stuff is only done
-  // once the app is started, this will suffice
-  var initApp = function() {
-    var template = _.template($('#option-template').html());
-    _.each(encoders, function(encoder, e) {
-      $("#add-encoder").append(template({
-        value: e,
-        text: "&nbsp;&nbsp;" + encoder.source + " / " + encoder.name
-      }));
-    });
-  };
-  initApp();
   
-  // Todo Model
-  // ----------
+  
+  // EncodeJob Model
+  // ---------------
+  
+  window.EncodeJob = Backbone.Model.extend({
 
-  // Our basic **Todo** model has `content`, `order`, and `done` attributes.
-  window.Todo = Backbone.Model.extend({
-
-    // Default attributes for the todo.
     defaults: {
-      done: false,
-      encoder: encoders[0],
-      uploaders: uploaders[0]
+      status: "pending",
+      percent: 0,
+      preset: 0
     },
 
-    // Ensure that each todo created has `content`.
     initialize: function() {
-      if (!this.get("encoder")) {
-        this.set({"encoder": this.defaults.encoder});
+      if (!this.get("status")) {
+        this.set(this.defaults);
       }
-    },
-
-    // Toggle the `done` state of this todo item.
-    toggle: function() {
-      this.save({done: !this.get("done")});
     }
 
   });
 
-  // Todo Collection
+
+  // Uploader List View
+  var UploaderListView = Backbone.View.extend({
+    
+    tagName: "div",
+    
+    events: {
+      "change select.add-uploader": "addItem"
+    },
+
+    initialize: function() {
+      $(this.el).html($("#uploader-list-template").html());
+      this.select = this.$("select.add-uploader");
+      
+      _.bindAll(this, "render", "addItem");
+      this.counter = 0;
+    },
+
+    render: function() {
+      var select = this.select;
+      select.html(option_template({
+        value: "",
+        text: selectText
+      }));
+      _.each(getUploaders(), function(uploader, i) {
+        select.append(option_template({
+          value: i,
+          text: "&nbsp;&nbsp;" + uploader.source + " / " + uploader.name
+        }));
+      });
+      return this;
+    },
+
+    addItem: function() {
+      this.counter++;
+      this.$("ul.uploader-list").append("<li>hi there " + this.counter + "</li>");
+    }
+
+  });
+
+  
+  // Encoder Model
+  // -------------
+
+  window.Encoder = Backbone.Model.extend({
+
+    // Default attributes
+    defaults: function() {
+      return {
+        encoder: 0,
+        uploaders: [0],
+        order: Encoders.nextOrder()
+      };
+    }
+
+  });
+
+  
+  // EncoderList Collection
   // ---------------
 
-  // The collection of todos is backed by *localStorage* instead of a remote
-  // server.
-  window.TodoList = Backbone.Collection.extend({
+  window.EncoderList = Backbone.Collection.extend({
 
-    // Reference to this collection's model.
-    model: Todo,
+    model: Encoder,
 
-    // Save all of the todo items under the `"todos"` namespace.
-    localStorage: new Store("todos"),
+    localStorage: new Store("encoders"),
 
-    // Filter down the list of all todo items that are finished.
-    done: function() {
-      return this.filter(function(todo){ return todo.get('done'); });
-    },
-
-    // Filter down the list to only todo items that are still not finished.
-    remaining: function() {
-      return this.without.apply(this, this.done());
-    },
-
-    // We keep the Todos in sequential order, despite being saved by unordered
-    // GUID in the database. This generates the next order number for new items.
     nextOrder: function() {
       if (!this.length) return 1;
       return this.last().get('order') + 1;
     },
 
-    // Todos are sorted by their original insertion order.
     comparator: function(todo) {
       return todo.get('order');
     }
@@ -147,53 +173,44 @@ $(function(){
   });
 
   // Create our global collection of **Todos**.
-  window.Todos = new TodoList;
+  window.Encoders = new EncoderList;
 
-  // Todo Item View
-  // --------------
+  
+  // Encoder View
+  // ------------
 
-  // The DOM element for a todo item...
-  window.TodoView = Backbone.View.extend({
+  window.EncoderView = Backbone.View.extend({
 
-    //... is a list tag.
     tagName:  "li",
 
-    // Cache the template function for a single item.
-    template: _.template($('#item-template').html()),
+    template: _.template($('#encoder-template').html()),
 
-    // The DOM events specific to an item.
     events: {
-      "click .check"              : "toggleDone",
-      "click span.todo-destroy"   : "clear",
+      "click span.destroy" : "clear",
     },
 
-    // The TodoView listens for changes to its model, re-rendering. Since there's
-    // a one-to-one correspondence between a **Todo** and a **TodoView** in this
-    // app, we set a direct reference on the model for convenience.
+    // The TodoView listens for changes to its model, re-rendering. Since 
+    // there's a one-to-one correspondence between a **Todo** and a 
+    // **TodoView** in this app, we set a direct reference on the model for
+    // convenience.
     initialize: function() {
       this.model.bind('change', this.render, this);
       this.model.bind('destroy', this.remove, this);
     },
 
-    // Re-render the contents of the todo item.
     render: function() {
+      
       $(this.el).html(this.template(_.extend(
-        this.model.toJSON(), {availUploaders: uploaders}
+        this.model.toJSON(), {
+          availEncoders: getEncoders()
+        }
       )));
-      this.setContent();
+      
+      // Add the uploader list
+      var view = new UploaderListView();
+      $(this.el).append(view.render().el);
+
       return this;
-    },
-
-    // To avoid XSS (not that it would be harmful in this particular app),
-    // we use `jQuery.text` to set the contents of the todo item.
-    setContent: function() {
-      var encoder = this.model.get('encoder');
-      this.$('.todo-content').text(encoder.name);
-    },
-
-    // Toggle the `"done"` state of the model.
-    toggleDone: function() {
-      this.model.toggle();
     },
 
     // Remove this view from the DOM.
@@ -207,85 +224,69 @@ $(function(){
     }
 
   });
-
-  // The Application
+  
+  
+  // EncoderList View
   // ---------------
 
-  // Our overall **AppView** is the top-level piece of UI.
-  window.AppView = Backbone.View.extend({
+  window.EncoderListView = Backbone.View.extend({
 
-    // Instead of generating a new element, bind to the existing skeleton of
-    // the App already present in the HTML.
-    el: $("#todoapp"),
+    tagName: "div",
 
-    // Our template for the line of statistics at the bottom of the app.
-    statsTemplate: _.template($('#stats-template').html()),
-
-    // Delegated events for creating new items, and clearing completed ones.
+    className: "encoder-list",
+    
     events: {
-      "click .todo-clear a": "clearCompleted",
-      "change #add-encoder": "addOnChange",
+      "change select.add-encoder": "addOnChange"
     },
 
-    // At initialization we bind to the relevant events on the `Todos`
-    // collection, when items are added or changed. Kick things off by
-    // loading any preexisting todos that might be saved in *localStorage*.
     initialize: function() {
-      this.select = this.$("#add-encoder");
+      
+      $(this.el).html($("#encoder-list-template").html());
+      this.select = this.$("select.add-encoder");
 
-      Todos.bind('add',   this.addOne, this);
-      Todos.bind('reset', this.addAll, this);
-      Todos.bind('all',   this.render, this);
+      $("body").append(this.render().el);
 
-      Todos.fetch();
+      Encoders.bind('add',   this.addOne, this);
+      Encoders.bind('reset', this.addAll, this);
+      Encoders.bind('all',   this.render, this);
+      
+      Encoders.fetch();
+      
     },
 
-    // Re-rendering the App just means refreshing the statistics -- the rest
-    // of the app doesn't change.
     render: function() {
-      this.$('#todo-stats').html(this.statsTemplate({
-        total:      Todos.length,
-        done:       Todos.done().length,
-        remaining:  Todos.remaining().length
+      var select = this.select;
+      select.html(option_template({
+        value: "",
+        text: selectText
       }));
+      _.each(getEncoders(), function(encoder, e) {
+        select.append(option_template({
+          value: e,
+          text: "&nbsp;&nbsp;" + encoder.source + " / " + encoder.name
+        }));
+      });
+      return this;
     },
 
-    // Add a single todo item to the list by creating a view for it, and
-    // appending its element to the `<ul>`.
-    addOne: function(todo) {
-      var view = new TodoView({model: todo});
-      this.$("#todo-list").append(view.render().el);
+    addOne: function(encoder) {
+      var view = new EncoderView({model: encoder});
+      this.$("ul.encoder-list").append(view.render().el);
     },
 
-    // Add all items in the **Todos** collection at once.
     addAll: function() {
-      Todos.each(this.addOne);
+      Encoders.each(this.addOne);
     },
 
-    // Generate the attributes for a new Todo item.
-    newAttributes: function() {
-      return {
-        order:   Todos.nextOrder(),
-        done:    false,
-        encoder: encoders[this.select.val()*1]
-      };
-    },
-
-    // Create a new Todo and reset the encoder select
     addOnChange: function() {
-      Todos.create(this.newAttributes());
+      Encoders.create({
+        encoder: this.select.val()*1
+      });
       this.select.val(selectText);
-    },
-
-    // Clear all done todo items, destroying their models.
-    clearCompleted: function() {
-      _.each(Todos.done(), function(todo){ todo.destroy(); });
-      return false;
     },
 
   });
 
-  // Finally, we kick things off by creating the **App**.
-  window.App = new AppView;
+  window.EncodersView = new EncoderListView();
 
 });
