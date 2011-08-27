@@ -187,6 +187,7 @@ $(function(){
 
     events: {
       "click span.destroy" : "clear",
+      "change select.add-uploader": "addUploader"
     },
 
     // The TodoView listens for changes to its model, re-rendering. Since 
@@ -196,21 +197,34 @@ $(function(){
     initialize: function() {
       this.model.bind('change', this.render, this);
       this.model.bind('destroy', this.remove, this);
+
+      this.counter = 0;
     },
 
     render: function() {
       
+      // Render #encoder-template
       $(this.el).html(this.template(_.extend(
         this.model.toJSON(), {
           availEncoders: getEncoders()
         }
       )));
       
-      // Add the uploader list
-      var view = new UploaderListView();
-      $(this.el).append(view.render().el);
-
+      // Render the uploader list
+      var select = this.$("select.add-uploader");
+      select.html(option_template({
+        value: "",
+        text: selectText
+      }));
+      _.each(getUploaders(), function(uploader, i) {
+        select.append(option_template({
+          value: i,
+          text: "&nbsp;&nbsp;" + uploader.source + " / " + uploader.name
+        }));
+      });
+      
       return this;
+
     },
 
     // Remove this view from the DOM.
@@ -221,6 +235,11 @@ $(function(){
     // Remove the item, destroy the model.
     clear: function() {
       this.model.destroy();
+    },
+
+    addUploader: function() {
+      this.counter++;
+      this.$("ul.uploader-list").append("<li>hi there " + this.counter + "</li>");
     }
 
   });
@@ -246,11 +265,11 @@ $(function(){
 
       $("body").append(this.render().el);
 
-      Encoders.bind('add',   this.addOne, this);
-      Encoders.bind('reset', this.addAll, this);
-      Encoders.bind('all',   this.render, this);
+      this.collection.bind('add',   this.addOne, this);
+      this.collection.bind('reset', this.addAll, this);
+      this.collection.bind('all',   this.render, this);
       
-      Encoders.fetch();
+      this.collection.fetch();
       
     },
 
@@ -275,11 +294,11 @@ $(function(){
     },
 
     addAll: function() {
-      Encoders.each(this.addOne);
+      this.collection.each(this.addOne);
     },
 
     addOnChange: function() {
-      Encoders.create({
+      this.collection.create({
         encoder: this.select.val()*1
       });
       this.select.val(selectText);
@@ -287,6 +306,6 @@ $(function(){
 
   });
 
-  window.EncodersView = new EncoderListView();
+  window.EncodersView = new EncoderListView({collection:window.Encoders});
 
 });

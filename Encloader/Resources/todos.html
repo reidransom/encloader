@@ -44,6 +44,11 @@
           <%= availEncoders[encoder].source %> /
           <%= availEncoders[encoder].name %>
         </div>
+        <label>Add an uploader
+          <select class="add-uploader">
+          </select>
+        </label>
+        <ul class="uploader-list"></ul>
         <span class="destroy"></span>
       </div>
     </script>
@@ -57,11 +62,6 @@
     </script>
               
     <script type="text/template" id="uploader-list-template">
-      <label>Add an uploader
-        <select class="add-uploader">
-        </select>
-      </label>
-      <ul class="uploader-list"></ul>
     </script>
     
     <script type="text/template" id="uploader-template">
