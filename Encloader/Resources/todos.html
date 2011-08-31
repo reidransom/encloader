@@ -22,34 +22,30 @@
     <script src="js/underscore.js"></script>
     <script src="js/backbone.js"></script>
     <script src="js/backbone-localstorage.js"></script>
+    <script src="js/Jaml.js"></script>
+    
     <script src="js/todos.js"></script>
   
   </head>
 	
 	<body lang="en">
 		
-    <h1><!--Encloader--> </h1>
-
-
+    <h1><!--Encloader--></h1>
 
     <!-- Templates -->
 
-    <script type="text/template" id="option-template">
-      <option value="<%= value %>"><%= text %></option>
-    </script>
-    
     <script type="text/template" id="encoder-template">
       <div class="encoder">
         <div>
-          <%= availEncoders[encoder].source %> /
-          <%= availEncoders[encoder].name %>
+          <%= source %> /
+          <%= name %>
         </div>
         <label>Add an uploader
           <select class="add-uploader">
           </select>
         </label>
         <ul class="uploader-list"></ul>
-        <span class="destroy"></span>
+        <span class="destroy encoder"></span>
       </div>
     </script>
               
@@ -61,15 +57,6 @@
       <ul class="encoder-list"></ul>
     </script>
               
-    <script type="text/template" id="uploader-list-template">
-    </script>
-    
-    <script type="text/template" id="uploader-template">
-      <%= availUploaders[uploader].source %> /
-      <%= availUploaders[uploader].name %>
-      <span class="destroy"></span>
-    </script>
-
   </body>
 
 </html>

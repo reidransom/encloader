@@ -1,14 +1,46 @@
-// An example Backbone application contributed by
-// [Jérôme Gravel-Niquet](http://jgn.me/). This demo uses a simple
-// [LocalStorage adapter](backbone-localstorage.html)
-// to persist Backbone models within your browser.
-
-// Load the application once the DOM is ready, using `jQuery.ready`:
 $(function(){
 
-  var selectText = "Choose:";
+  Jaml.register("option", function(text) {
+    option(text);
+  });
+  Jaml.register("preset-option", function(preset) {
+    option({value: preset.id},
+      "&nbsp;&nbsp;" + preset.source + " / " + preset.name
+    );
+  });
+  Jaml.register("preset", function(preset) {
+    div(preset.source + " / " + preset.name);
+  });
+  Jaml.register("uploader", function(uploader) {
+    li(
+      Jaml.render("preset", uploader),
+      span({cls: "destroy uploader"})
+    )
+  });
+
+  var OrderedList = Backbone.Collection.extend({
+
+    nextOrder: function() {
+      if (!this.length) return 1;
+      return this.last().get('order') + 1;
+    },
+
+    comparator: function(todo) {
+      return todo.get('order');
+    },
   
-  var option_template = _.template($('#option-template').html());
+  });
+
+  var PresetList = OrderedList.extend({
+    
+    asOptions: function() {
+      html = Jaml.render("option", "Choose:");
+      html += Jaml.render("preset-option", this.toJSON());
+      return html;
+    }
+  
+  });
+
 
   var getSources = function() {
     var sources = [];
@@ -18,11 +50,13 @@ $(function(){
           name: "Local",
           encoders: [
             {
+              id: "d1987e6e-3159-94d3-d661-d1bc3f0af16a",
               name: "Web Post (HD)",
               cmd: "HandbrakeCLI make HD video",
               extension: ".mp4"
             },
             {
+              id: "c809a3df-174e-cb6f-edac-ae4d53a7a1d2",
               name: "Web Post (SD)",
               cmd: "Handbrake CLI make SD video",
               extension: ".mp4"
@@ -30,16 +64,19 @@ $(function(){
           ],
           uploaders: [
             {
+              id: "ae52faea-ec4f-e9f1-0926-a48e63671212",
               name: "Desktop",
               path: "~/Desktop"
             },
             {
+              id: "c175332e-4aff-4f76-21b4-3fa71e82c73a",
               name: "Example FTP",
               host: "ftp.example.com",
               user: "username",
               passwd: "password"
             },
             {
+              id: "67ff87f9-0fcb-f6f7-4437-75dfeef263bf",
               name: "Example FTP 2",
               host: "ftp.example.com",
               user: "username",
@@ -53,127 +90,64 @@ $(function(){
   };
   var sources = getSources();
   
-  var getEncoders = function() {
-    var encoders = [];
+  var getPresets = function(presetType) {
+    var presets = new PresetList;
     _.each(sources, function(source) {
-      _.each(source.encoders, function(encoder) {
-        encoders.push(_.extend(encoder, {source: source.name}));
-      });
-    });
-    return encoders;
-  };
-
-  var getUploaders = function() {
-    var uploaders = [];
-    _.each(sources, function(source) {
-      _.each(source.uploaders, function(uploader) {
-        uploaders.push(_.extend(uploader, {source: source.name}));
-      });
-    });
-    return uploaders;
-  };
-
-  
-  
-  // EncodeJob Model
-  // ---------------
-  
-  window.EncodeJob = Backbone.Model.extend({
-
-    defaults: {
-      status: "pending",
-      percent: 0,
-      preset: 0
-    },
-
-    initialize: function() {
-      if (!this.get("status")) {
-        this.set(this.defaults);
-      }
-    }
-
-  });
-
-
-  // Uploader List View
-  var UploaderListView = Backbone.View.extend({
-    
-    tagName: "div",
-    
-    events: {
-      "change select.add-uploader": "addItem"
-    },
-
-    initialize: function() {
-      $(this.el).html($("#uploader-list-template").html());
-      this.select = this.$("select.add-uploader");
-      
-      _.bindAll(this, "render", "addItem");
-      this.counter = 0;
-    },
-
-    render: function() {
-      var select = this.select;
-      select.html(option_template({
-        value: "",
-        text: selectText
-      }));
-      _.each(getUploaders(), function(uploader, i) {
-        select.append(option_template({
-          value: i,
-          text: "&nbsp;&nbsp;" + uploader.source + " / " + uploader.name
+      _.each(source[presetType], function(preset) {
+        presets.add(_.extend(preset, {
+          source: source.name,
+          order: presets.nextOrder()
         }));
       });
-      return this;
-    },
+    });
+    return presets;
+  };
 
-    addItem: function() {
-      this.counter++;
-      this.$("ul.uploader-list").append("<li>hi there " + this.counter + "</li>");
-    }
-
-  });
 
   
-  // Encoder Model
-  // -------------
+  window.AvailableEncoders = getPresets("encoders");
+  window.AvailableUploaders = getPresets("uploaders");
 
-  window.Encoder = Backbone.Model.extend({
 
-    // Default attributes
-    defaults: function() {
-      return {
-        encoder: 0,
-        uploaders: [0],
-        order: Encoders.nextOrder()
-      };
-    }
-
-  });
-
+  
   
   // EncoderList Collection
   // ---------------
 
-  window.EncoderList = Backbone.Collection.extend({
+  window.EncoderList = OrderedList.extend({
 
-    model: Encoder,
-
-    localStorage: new Store("encoders"),
-
-    nextOrder: function() {
-      if (!this.length) return 1;
-      return this.last().get('order') + 1;
-    },
-
-    comparator: function(todo) {
-      return todo.get('order');
-    }
+    localStorage: new Store("encoders")
 
   });
 
-  // Create our global collection of **Todos**.
-  window.Encoders = new EncoderList;
+
+  window.UploaderView = Backbone.View.extend({
+    
+    tagName: "li",
+    
+    events: {
+      "click span.destroy.uploader" : "clear",
+    },
+    
+    initialize: function() {
+      this.model.bind('change', this.render, this);
+      this.model.bind("destroy", this.remove, this);
+    },
+    
+    render: function() {
+      var uploader = AvailableUploaders.get(this.model.get("uploader"));
+      Jaml.render("uploader", uploader.toJSON())
+    },
+  
+    remove: function() {
+      $(this.el).remove();
+    },
+
+    clear: function() {
+      this.model.destroy();
+    },
+
+  });
 
   
   // Encoder View
@@ -184,62 +158,58 @@ $(function(){
     tagName:  "li",
 
     template: _.template($('#encoder-template').html()),
-
+    
     events: {
-      "click span.destroy" : "clear",
+      "click span.destroy.encoder" : "clear",
       "change select.add-uploader": "addUploader"
     },
 
-    // The TodoView listens for changes to its model, re-rendering. Since 
-    // there's a one-to-one correspondence between a **Todo** and a 
-    // **TodoView** in this app, we set a direct reference on the model for
-    // convenience.
     initialize: function() {
       this.model.bind('change', this.render, this);
       this.model.bind('destroy', this.remove, this);
-
-      this.counter = 0;
     },
 
+    select: function() {
+      return this.$("select.add-uploader");
+    },
+    
     render: function() {
       
-      // Render #encoder-template
-      $(this.el).html(this.template(_.extend(
-        this.model.toJSON(), {
-          availEncoders: getEncoders()
-        }
-      )));
+      var encoder = AvailableEncoders.get(this.model.get("encoder"));
+      $(this.el).html(this.template(encoder.toJSON()));
       
-      // Render the uploader list
-      var select = this.$("select.add-uploader");
-      select.html(option_template({
-        value: "",
-        text: selectText
-      }));
-      _.each(getUploaders(), function(uploader, i) {
-        select.append(option_template({
-          value: i,
-          text: "&nbsp;&nbsp;" + uploader.source + " / " + uploader.name
-        }));
-      });
-      
+      this.select().html(AvailableUploaders.asOptions());
+
+      this.$("ul.uploader-list").html(
+        Jaml.render("uploader", _.map(this.model.get("uploaders"), function(u) {
+          return AvailableUploaders.get(u).toJSON();
+        }))
+      );
+
       return this;
 
     },
 
-    // Remove this view from the DOM.
     remove: function() {
       $(this.el).remove();
     },
 
-    // Remove the item, destroy the model.
     clear: function() {
       this.model.destroy();
     },
 
     addUploader: function() {
-      this.counter++;
-      this.$("ul.uploader-list").append("<li>hi there " + this.counter + "</li>");
+      
+      var id = this.select().val();
+
+      var uploaders = this.model.get("uploaders");
+      uploaders.push(id);
+      this.model.save({uploaders: uploaders});
+
+      this.render();
+      
+      this.select().val(0);
+      
     }
 
   });
@@ -262,7 +232,6 @@ $(function(){
       
       $(this.el).html($("#encoder-list-template").html());
       this.select = this.$("select.add-encoder");
-
       $("body").append(this.render().el);
 
       this.collection.bind('add',   this.addOne, this);
@@ -274,17 +243,7 @@ $(function(){
     },
 
     render: function() {
-      var select = this.select;
-      select.html(option_template({
-        value: "",
-        text: selectText
-      }));
-      _.each(getEncoders(), function(encoder, e) {
-        select.append(option_template({
-          value: e,
-          text: "&nbsp;&nbsp;" + encoder.source + " / " + encoder.name
-        }));
-      });
+      this.select.html(AvailableEncoders.asOptions());
       return this;
     },
 
@@ -299,13 +258,15 @@ $(function(){
 
     addOnChange: function() {
       this.collection.create({
-        encoder: this.select.val()*1
+        encoder: this.select.val(),
+        uploaders: [],
+        order: this.collection.nextOrder()
       });
-      this.select.val(selectText);
+      this.select.val(0);
     },
 
   });
 
-  window.EncodersView = new EncoderListView({collection:window.Encoders});
+  window.EncodersView = new EncoderListView({collection:new EncoderList});
 
 });
