@@ -1,0 +1,79 @@
+@import 'reset.less';
+@import 'grid.less';
+
+body {
+  font-family: "Helvetica Neue";
+	background-color: #eee;
+  color: #999;
+}
+header#top {
+	background-color: #000;
+}
+h1 {
+	font-size: 2em;
+	color: #fff;
+	a {
+		color: white;
+		text-decoration: none;
+	}
+}
+h2 {
+	font-size: 1.5em;
+	color: #666;
+}
+
+div.dropzone {
+  height: 170px;
+}
+div.dropzone > div {
+  position: absolute;
+  text-align: center;
+  width: 300px;
+  margin-top: 20px;
+}
+div.dropzone > div > img {
+  border: 1px dashed #999;
+  border-radius: 20px;
+}
+div.dropzone > div > p {
+  text-transform: uppercase;
+}
+textarea.dropzone {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+}
+ 
+
+
+//////////
+// GRID //
+//////////
+
+// Specify the number of columns and set column and gutter widths
+@columns: 8;
+@column-width: 60;
+@gutter-width: 20;
+
+// Remove the definition below for a pixel-based layout
+//@total-width: 100%;
+
+
+////////////
+// LAYOUT //
+////////////
+
+// header
+header#top {
+	margin-bottom: 1em;
+}
+
+// main column & sidebar
+#maincolumn {
+	.column(4);
+  background-color: #fff;
+}
+#sidebar {
+	.column(4);
+  background-color: #fff;
+}
