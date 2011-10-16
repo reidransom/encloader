@@ -130,8 +130,11 @@ body {
 }
 body {
   font-family: "Helvetica Neue";
-  background-color: #eee;
+  background-color: #333;
   color: #999;
+}
+div.bodywrap {
+  padding: 10px 5px;
 }
 header#top {
   background-color: #000;
@@ -154,37 +157,67 @@ div.dropzone {
 div.dropzone > div {
   position: absolute;
   text-align: center;
-  width: 300px;
+  width: 200px;
   margin-top: 20px;
 }
 div.dropzone > div > img {
   border: 1px dashed #999;
   border-radius: 20px;
 }
-div.dropzone > div > p {
-  text-transform: uppercase;
-}
 textarea.dropzone {
   opacity: 0;
   width: 100%;
   height: 100%;
 }
+#one label {
+  padding: 5px 0;
+  display: block;
+}
+#one select, #one input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.jobs > div {
+  background-color: #222;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+.jobs > div p.title {
+  color: #fff;
+}
+.jobs > div p.state {
+  font-size: 70%;
+}
+.jobs > div div.progress-bar {
+  background-color: #000;
+  width: 100%;
+  height: 2px;
+  margin-top: 5px;
+}
+.jobs > div div.progress-bar div {
+  background-color: #666;
+  width: 0%;
+  height: 2px;
+}
 header#top {
   margin-bottom: 1em;
 }
-#maincolumn {
+#one {
   display: inline;
   float: left;
   overflow: hidden;
-  width: 300px;
-  margin: 0 10px;
-  background-color: #fff;
+  width: 200px;
+  margin: 0 5px;
+  background-color: #222;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
 }
-#sidebar {
+#two {
   display: inline;
   float: left;
   overflow: hidden;
-  width: 300px;
-  margin: 0 10px;
-  background-color: #fff;
+  width: 340px;
+  margin: 0 5px;
 }

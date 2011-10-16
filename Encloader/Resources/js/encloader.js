@@ -11,10 +11,6 @@ $(function(){
     interpolate : /\{\{(.+?)\}\}/g
   };
 
-  var escapeShellArg = function(arg) {
-    return arg;
-  };
-  
   // Simple html tag building
   var html = {
     
@@ -131,43 +127,37 @@ $(function(){
       if (title === undefined) title = "";
       
       this.percent = 0;
-      this.state = "pending...";
+      this.state = "Pending...";
       this.title = title;
+      
       this.el = $(document.createElement("div"));
-      this.render();
+      this.el.html(this.template({
+        title: this.title,
+        state: this.state,
+        percent: this.percent
+      }));
+      
+      this.el_state = this.el.find("p.state");
+      this.el_progress = this.el.find("div.progress-bar div");
     
     },
 
     template: _.template($("#job-template").html()),
 
-    render: function() {
-      this.el.html(this.template({
-        title: this.title,
-        percent: Math.round(this.percent),
-        state: this.state
-      }));
-      return this;
-    },
-
     set: function(attr, val) {
       this[attr] = val;
     },
     
-    setOnReadLine: _.throttle(function(data) {
-      
-      var line = data.toString();
-      var percent = rhandbrake.exec(line);
-      if (!percent) {
-        return;
-      }
-      percent = percent[0];
-      percent = percent.substr(0, percent.length - 2) * 1;
-      
-      x.encjob.set("percent", percent);
-      x.encjob.render();
+    setPercent: function(val) {
+      this.percent = val;
+      this.el_progress.css({width: this.percent+"%"});
+    },
+
+    setState: function(val) {
+      this.state = val;
+      this.el_state.html(this.state);
+    }
     
-    }, 100)
-  
   });
   
   /*
@@ -199,16 +189,16 @@ $(function(){
       }
       this.path = path;
       
-      this.encjob = JobBase("Encoding " + outbasename);
-      this.upjob = JobBase("Uploading " + outbasename);
-      $("div.jobs").prepend(this.encjob.el, this.upjob.el);
+      this.job = JobBase(outbasename);
+      $("div.jobs").prepend(this.job.el);
       
       this.process = Titanium.Process.createProcess(this.getCmd());
       var rhandbrake = /\d\d?\.\d\d %/g;
       rhandbrake.compile(rhandbrake);
+      
       var x = this;
       
-      this.process.setOnReadLine(_.throttle(function(data) {
+      this.process.setOnReadLine(function(data) {
         
         var line = data.toString();
         var percent = rhandbrake.exec(line);
@@ -218,62 +208,54 @@ $(function(){
         percent = percent[0];
         percent = percent.substr(0, percent.length - 2) * 1;
         
-        x.encjob.set("percent", percent);
-        x.encjob.render();
+        x.job.setPercent(percent);
 
-      }, 100));
+      });
       
       this.process.setOnExit(function() {
         
-        x.encjob.set("percent", 100);
-        x.encjob.set("state", "complete.");
-        x.encjob.render();
+        x.job.setPercent(100);
+        x.job.setState("Done. (task 1 of 2)");
         
-        x.upjob.set("state", "uploading...");
         var upcmd = [
           "curl",
           "-T",
-          escapeShellArg(x.outfile.toString()),
+          x.outfile.toString(),
           "ftp://" + encodeURIComponent(x.uploader.user) + 
           ":" + encodeURIComponent(x.uploader.passwd) +
           "@" + x.uploader.host +
           "/" + encodeURIComponent(x.path)
         ];
-        upprocess = Titanium.Process.createProcess(upcmd);
+        
+        var upprocess = Titanium.Process.createProcess(upcmd);
         upprocess.setOnReadLine(function(data) {
           var line = data.toString();
           var percent = parseInt(line);
           if (isNaN(percent)) {
             return;
           }
-          x.upjob.set("percent", percent);
-          x.upjob.render();
+          x.job.setPercent(percent);
         });
         upprocess.setOnExit(function() {
-          x.upjob.set("percent", 100);
-          x.upjob.set("state", "complete.");
-          x.upjob.render();
+          x.job.setState("Done.");
+          x.job.setPercent(100);
         });
+        
+        x.job.setState("Uploading... (task 2 of 2)");
         upprocess.launch();
       
       });
       
-      this.encjob.set("state", "encoding...");
+      this.job.setState("Encoding... (task 1 of 2)");
       this.process.launch();
       
     },
 
-    storbinaryCallback: function(buff) {
-      this.xfered = this.xfered + buff.length - 1;
-      this.upjob.set("percent", (this.xfered * 100) / this.filesize);
-    },
-      
     getCmd: function() {
       var cmd = this.encoder.cmd.split(" ");
       cmd[0] = bins.handbrake;
-      cmd[2] = escapeShellArg(this.infile.toString());
-      cmd[4] = escapeShellArg(this.outfile.toString());
-      log.debug(cmd.join('<br />'));
+      cmd[2] = this.infile.toString();
+      cmd[4] = this.outfile.toString();
       return cmd;
     },
 

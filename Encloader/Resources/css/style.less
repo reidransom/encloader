@@ -3,8 +3,11 @@
 
 body {
   font-family: "Helvetica Neue";
-	background-color: #eee;
+	background-color: #333;
   color: #999;
+}
+div.bodywrap {
+  padding: 10px 5px;
 }
 header#top {
 	background-color: #000;
@@ -28,7 +31,7 @@ div.dropzone {
 div.dropzone > div {
   position: absolute;
   text-align: center;
-  width: 300px;
+  width: 200px;
   margin-top: 20px;
 }
 div.dropzone > div > img {
@@ -36,12 +39,46 @@ div.dropzone > div > img {
   border-radius: 20px;
 }
 div.dropzone > div > p {
-  text-transform: uppercase;
 }
 textarea.dropzone {
   opacity: 0;
   width: 100%;
   height: 100%;
+}
+
+#one {
+  label {
+    padding: 5px 0;
+    display: block;
+  }
+  select, input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.jobs > div {
+  background-color: #222;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  p.title {
+    color: #fff;
+  }
+  p.state {
+    font-size: 70%;
+  }
+  div.progress-bar {
+    background-color: #000;
+    width: 100%;
+    height: 2px;
+    margin-top: 5px;
+    div {
+      background-color: #666;
+      width: 0%;
+      height: 2px;
+    }
+  }
 }
  
 
@@ -53,7 +90,7 @@ textarea.dropzone {
 // Specify the number of columns and set column and gutter widths
 @columns: 8;
 @column-width: 60;
-@gutter-width: 20;
+@gutter-width: 10;
 
 // Remove the definition below for a pixel-based layout
 //@total-width: 100%;
@@ -69,11 +106,13 @@ header#top {
 }
 
 // main column & sidebar
-#maincolumn {
-	.column(4);
-  background-color: #fff;
+#one {
+	.column(3);
+  background-color: #222;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
 }
-#sidebar {
-	.column(4);
-  background-color: #fff;
+#two {
+	.column(5);
 }
