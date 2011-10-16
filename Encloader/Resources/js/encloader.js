@@ -1,8 +1,5 @@
 $(function(){
 
-  // Load python
-  Titanium.include("EncloaderDesktop.py");
-  
   // Cache filesystem separator
   var separator = Titanium.Filesystem.getSeparator();
 
@@ -51,6 +48,9 @@ $(function(){
   };
 
   var projectRoot = Titanium.App.appURLToPath("app://");
+  
+  Titanium.UI.setIcon(ospath.join([projectRoot, "img", "encloader-icon.png"]));
+  Titanium.UI.setDockIcon(ospath.join([projectRoot, "img", "encloader.icns"]));
   
   var bins = {
     handbrake: ospath.join([projectRoot, "HandBrakeCLI"]),
