@@ -8,7 +8,7 @@
     <publisher>reid</publisher>
     <url>http://reidransom.com</url>
     <description>not specified</description>
-    <icon>default_app_logo.png</icon>
+    <icon>app://img/encloader-icon.png</icon>
     <copyright>2011 by reid</copyright>
     <!-- Window Definition - these values can be edited -->
     <window>

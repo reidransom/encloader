@@ -1,8 +1,8 @@
-# encloader-desktop
+# encloader
 
 ## Description
 
-encloader-desktop is a droplet for the Handbrake video encoder which retreives
+encloader is a droplet for the Handbrake video encoder which retreives
 encoding settings from a central server each time it is invoked.  This allows
 for a team of video encoders (editors perhaps) to easily share the same
 settings.
