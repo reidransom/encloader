@@ -49,13 +49,12 @@ $(function(){
 
   var projectRoot = Titanium.App.appURLToPath("app://");
   
-  Titanium.UI.setIcon(ospath.join([projectRoot, "img", "encloader-icon.png"]));
+  Titanium.UI.setIcon(ospath.join([projectRoot, "img", "encloader.png"]));
   Titanium.UI.setDockIcon(ospath.join([projectRoot, "img", "encloader.icns"]));
   
   var bins = {
-    handbrake: ospath.join([projectRoot, "HandBrakeCLI"]),
-    ffmbc: ospath.join([projectRoot, "ffmbc"]),
-    ffmpeg: ospath.join([projectRoot, "ffmpeg"])
+    handbrake: ospath.join([projectRoot, "bin", "HandBrakeCLI"]),
+    ffmpeg: ospath.join([projectRoot, "bin", "ffmpeg"])
   }
   
   // Cache selects
@@ -192,7 +191,12 @@ $(function(){
       this.job = JobBase(outbasename);
       $("div.jobs").prepend(this.job.el);
       
-      this.process = Titanium.Process.createProcess(this.getCmd());
+      var enccmd = this.encoder.cmd.split(" ");
+      enccmd[0] = bins.handbrake;
+      enccmd[2] = this.infile.toString();
+      enccmd[4] = this.outfile.toString();
+
+      this.process = Titanium.Process.createProcess(enccmd);
       var rhandbrake = /\d\d?\.\d\d %/g;
       rhandbrake.compile(rhandbrake);
       
@@ -249,14 +253,6 @@ $(function(){
       this.job.setState("Encoding... (task 1 of 2)");
       this.process.launch();
       
-    },
-
-    getCmd: function() {
-      var cmd = this.encoder.cmd.split(" ");
-      cmd[0] = bins.handbrake;
-      cmd[2] = this.infile.toString();
-      cmd[4] = this.outfile.toString();
-      return cmd;
     },
 
     getAutoOutfile: function() {

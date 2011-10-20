@@ -1,18 +1,12 @@
-# encloader
+# Encloader
 
 ## Description
 
-encloader is a droplet for the Handbrake video encoder which retreives
-encoding settings from a central server each time it is invoked.  This allows
-for a team of video encoders (editors perhaps) to easily share the same
+Encloader is an application that encodes and uploads video with minimal user
+interaction.  It retreives settings from a user-defined set of URLs.  This 
+allows for a team of editors to easily share the same encoding and uploading
 settings.
-
-## Requirements
-
-* python
-* HandBrakeCLI
-* CocoaDialog
 
 ## Downloads
 
-* [Mac](https://s3.amazonaws.com/rr_media/encloader-desktop/EncloaderDesktop.zip)
+* [Mac OS 10.5+ (Intel)](https://github.com/downloads/reidransom/encloader/Encloader.app.zip)
