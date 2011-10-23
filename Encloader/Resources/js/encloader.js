@@ -21,12 +21,33 @@ $(function(){
   var ospath = {
     
     basename: function(filename) {
-      return _(filename.split(separator)).last();
+      return _(filename.toString().split(separator)).last();
     },
 
     join: function(list) {
       return list.join(separator);
-    }
+    },
+
+    split: function(filename) {
+      filename = filename.toString();
+      var i = filename.lastIndexOf(separator);
+      if (i === -1) {
+        return [filename, ""];
+      }
+      return [filename.slice(0, i), filename.slice(i)];
+    },
+    
+    splitext: function(filename) {
+      filename = filename.toString();
+      var i = filename.lastIndexOf(".");
+      if ((i === -1) || (i < filename.lastIndexOf("/"))) {
+        // There is no file extension
+        return [filename, ""];
+      }
+      return [filename.slice(0, i), filename.slice(i)];
+    },
+
+    tempDir: Titanium.Filesystem.createTempDirectory()
 
   };
 
@@ -46,6 +67,19 @@ $(function(){
     }
   
   };
+      
+  var getNewFile = function(path) {
+    var rootext = ospath.splitext(path.toString());
+    var outfile = Titanium.Filesystem.getFile(path);
+    var i = 1;
+    while (outfile.exists()) {
+      outfile = Titanium.Filesystem.getFile(
+        rootext[0] + "-" + i + rootext[1]
+      );
+      i = i + 1;
+    }
+    return outfile;
+  }
 
   var projectRoot = Titanium.App.appURLToPath("app://");
   
@@ -65,7 +99,9 @@ $(function(){
 
   var getPresets = function() {
     
-    var presets = {};
+    var presets = {
+    };
+      
     
     // Clear the select elements
     _(select).each(function(s) {
@@ -83,6 +119,18 @@ $(function(){
       sources = data;
     }
     stream.close();
+  
+    sources.unshift({
+      "name": "Built-in",
+      "presets": [{
+        "id": "kej83J",
+        "type": "MV",
+        "name": "Desktop",
+        "path": Titanium.Filesystem.getFile(
+          Titanium.Filesystem.getDesktopDirectory()
+        )
+      }]
+    });
 
     // Flatten sources
     var addSource = function(source) {
@@ -92,7 +140,7 @@ $(function(){
         var type = (preset.type === "ENC") ? "encoders" : "uploaders";
         select[type].append(html.option(
           preset.id,
-          preset.source + ' / ' + preset.name
+          /*preset.source + ' / ' +*/ preset.name
         ));
         presets[preset.id] = preset;
       });
@@ -176,25 +224,92 @@ $(function(){
       this.infile = Titanium.Filesystem.getFile(infile);
       this.encoder = Presets[encoder_id];
       this.uploader = Presets[uploader_id];
-      this.outfile = this.getAutoOutfile();
-
       this.xfered = 0;
       this.filesize = 0;
 
-      var outbasename = ospath.basename(this.outfile.toString());
+      // this is where files get encoded to by default, it should be user-definable.
+      var defaultpath = Titanium.Filesystem.getDesktopDirectory();
       
-      if (!path) {
-        path = outbasename;
+      var xtrapath = path;
+      var localpath = "";
+      var uppath = "";
+      
+      if (this.uploader.hasOwnProperty("host")) {
+        // uploader is an FTP
+        var uppath = "";
+        if (this.uploader.hasOwnProperty("path")) {
+          uppath = this.uploader.path;
+        }
+        if (xtrapath) {
+          if (xtrapath.slice(-1) === "/") {
+            // xtrapath is a directory
+            localpath = Titanium.Filesystem.getFile(defaultpath,
+              ospath.basename(infile));
+            uppath = uppath + xtrapath + ospath.basename(infile);
+          }
+          else {
+            // xtrapath is a file
+            localpath = Titanium.Filesystem.getFile(defaultpath,
+              ospath.basename(xtrapath));
+            uppath = uppath + xtrapath;
+          }
+        }
+        else {
+          // no xtrapath
+          localpath = Titanium.Filesystem.getFile(defaultpath,
+            ospath.basename(infile));
+          uppath = uppath + ospath.basename(infile);
+        }
       }
-      this.path = path;
-      
-      this.job = JobBase(outbasename);
+      else {
+        // uploader is a local MV
+        if (xtrapath) {
+          if (xtrapath.charAt(xtrapath.length - 1) == '/') {
+            localpath = Titanium.Filesystem.getFile(this.uploader.path, xtrapath,
+              ospath.basename(infile));
+          }
+          else {
+            localpath = Titanium.Filesystem.getFile(this.uploader.path, xtrapath);
+          }
+        }
+        else {
+          localpath = Titanium.Filesystem.getFile(this.uploader.path,
+            ospath.basename(infile));
+        }
+      }
+
+      if (ospath.splitext(localpath)[1].slice(1) != this.encoder.extension) {
+        localpath = Titanium.Filesystem.getFile(ospath.splitext(localpath)[0] +
+          "." + this.encoder.extension);
+        if (uppath) {
+          uppath = ospath.splitext(uppath)[0] + "." + this.encoder.extension;
+        }
+      }
+
+      this.job = JobBase(ospath.basename(localpath));
       $("div.jobs").prepend(this.job.el);
+      
+      
+      // Check if files already exist
+      // todo: check if remote file exists
+      if (localpath.exists()) {
+        this.job.setState("File already exists.");
+        return;
+      }
+
+
+      // Check if target directory actually exists
+      // todo: check if target remote directory actually exists
+      if (!Titanium.Filesystem.getFile(ospath.split(localpath)[0]).isDirectory()) {
+        this.job.setState("Folder does not exist.");
+        return;
+      }
+      
       
       var enccmd = this.encoder.cmd.split(" ");
       enccmd[0] = bins.handbrake;
       enccmd[2] = this.infile.toString();
-      enccmd[4] = this.outfile.toString();
+      enccmd[4] = localpath.toString();
 
       this.process = Titanium.Process.createProcess(enccmd);
       var rhandbrake = /\d\d?\.\d\d %/g;
@@ -219,16 +334,20 @@ $(function(){
       this.process.setOnExit(function() {
         
         x.job.setPercent(100);
+        if (x.uploader.type === "MV") {
+          x.job.setState("Done.");
+          return;
+        }
         x.job.setState("Done. (task 1 of 2)");
         
         var upcmd = [
           "curl",
           "-T",
-          x.outfile.toString(),
+          localpath.toString(),
           "ftp://" + encodeURIComponent(x.uploader.user) + 
           ":" + encodeURIComponent(x.uploader.passwd) +
           "@" + x.uploader.host +
-          "/" + encodeURIComponent(x.path)
+          "/" + encodeURIComponent(uppath)
         ];
         
         var upprocess = Titanium.Process.createProcess(upcmd);
@@ -238,7 +357,9 @@ $(function(){
           if (isNaN(percent)) {
             return;
           }
-          x.job.setPercent(percent);
+          if (x.job.percent < percent) {
+            x.job.setPercent(percent);
+          }
         });
         upprocess.setOnExit(function() {
           x.job.setState("Done.");
@@ -246,16 +367,22 @@ $(function(){
         });
         
         x.job.setState("Uploading... (task 2 of 2)");
+        x.job.setPercent(0);
         upprocess.launch();
       
       });
       
-      this.job.setState("Encoding... (task 1 of 2)");
+      if (x.uploader.type === "MV") {
+        this.job.setState("Encoding...");
+      }
+      else {
+        this.job.setState("Encoding... (task 1 of 2)");
+      }
       this.process.launch();
       
     },
 
-    getAutoOutfile: function() {
+    getAutoOutfile: function(path) {
       var desktop = Titanium.Filesystem.getDesktopDirectory();
       var basename = _(this.infile.toString().split(separator)).last();
       basename = basename.substring(
@@ -302,3 +429,28 @@ $(function(){
   
 });
 
+
+/*
+
+Settings: overwrite everything or fail on name collisions
+
+if UP
+  uppath and mvpath are from presets
+  if xtrapath is a file
+    localpath = desktop + xtrapathbasename
+    uppath = uppath + xtrapath
+  elif xtrapath is a directory
+    localpath = desktop + inputbasename
+    uppath = uppath + xtrapath + inputbasename
+  else
+    localpath = desktop + inputbasename
+    uppath = uppath + inputbasename
+else
+  if xtrapath is a file
+    localpath = mvpath + xtrapath
+  elif xtrapath is a directory
+    localpath = mvpath + xtrapath + inputbasename
+  else
+    localpath = mvpath + inputbasename
+
+*/
