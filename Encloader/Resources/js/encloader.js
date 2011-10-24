@@ -83,13 +83,20 @@ $(function(){
 
   var projectRoot = Titanium.App.appURLToPath("app://");
   
-  Titanium.UI.setIcon(ospath.join([projectRoot, "img", "encloader.png"]));
-  Titanium.UI.setDockIcon(ospath.join([projectRoot, "img", "encloader.icns"]));
+  Titanium.UI.setIcon(Titanium.Filesystem.getFile(projectRoot, "img",
+    "encloader.png").toString());
+  Titanium.UI.setDockIcon(Titanium.Filesystem.getFile(projectRoot, "img",
+    "encloader.icns").toString());
   
   var bins = {
-    handbrake: ospath.join([projectRoot, "bin", "HandBrakeCLI"]),
-    ffmpeg: ospath.join([projectRoot, "bin", "ffmpeg"])
-  }
+    handbrake: Titanium.Filesystem.getFile(projectRoot, "bin", "HandBrakeCLI"),
+    ffmpeg: Titanium.Filesystem.getFile(projectRoot, "bin", "ffmpeg")
+  };
+  _.each(_.values(bins), function(bin) {
+    if (!bin.isExecutable()) {
+      Titanium.Process.createProcess(["/bin/chmod", "755", bin.toString()]).launch();
+    }
+  });
   
   // Cache selects
   var select = {
@@ -122,14 +129,23 @@ $(function(){
   
     sources.unshift({
       "name": "Built-in",
-      "presets": [{
-        "id": "kej83J",
-        "type": "MV",
-        "name": "Desktop",
-        "path": Titanium.Filesystem.getFile(
-          Titanium.Filesystem.getDesktopDirectory()
-        )
-      }]
+      "presets": [
+        {
+          "id": "kej83J",
+          "type": "MV",
+          "name": "Desktop",
+          "path": Titanium.Filesystem.getFile(
+            Titanium.Filesystem.getDesktopDirectory()
+          )
+        },
+        {
+          "id": "owk93k",
+          "type": "ENC",
+          "name": "libx264-ultrafast deinterlace",
+          "cmd": "{{ffmpeg}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif {{outfile}}",
+          "extension": "mp4"
+        }
+      ]
     });
 
     // Flatten sources
@@ -307,9 +323,32 @@ $(function(){
       
       
       var enccmd = this.encoder.cmd.split(" ");
+      var ffpresets = Titanium.Filesystem.getFile(projectRoot,
+        "ffpresets").toString() + separator;
+      var infile = this.infile;
+      /*
       enccmd[0] = bins.handbrake;
       enccmd[2] = this.infile.toString();
       enccmd[4] = localpath.toString();
+      */
+      _.each(enccmd, function(param, i) {
+        enccmd[i] = param.replace("{{ffpresets}}", ffpresets);
+        if (param === "{{handbrake}}") {
+          enccmd[i] = bins.handbrake;
+        }
+        if (param === "{{ffmpeg}}") {
+          enccmd[i] = bins.ffmpeg;
+        }
+        if (param === "{{infile}}") {
+          enccmd[i] = infile.toString();
+        }
+        if (param === "{{outfile}}") {
+          enccmd[i] = localpath.toString();
+        }
+        if (param === "{{threads}}") {
+          enccmd[i] = Titanium.Platform.getProcessorCount() + "";
+        }
+      });
 
       this.process = Titanium.Process.createProcess(enccmd);
       var rhandbrake = /\d\d?\.\d\d %/g;
