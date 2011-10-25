@@ -88,9 +88,12 @@ $(function(){
   Titanium.UI.setDockIcon(Titanium.Filesystem.getFile(projectRoot, "img",
     "encloader.icns").toString());
   
+  var binpath = Titanium.Filesystem.getFile(projectRoot, "bin");
   var bins = {
     handbrake: Titanium.Filesystem.getFile(projectRoot, "bin", "HandBrakeCLI"),
-    ffmpeg: Titanium.Filesystem.getFile(projectRoot, "bin", "ffmpeg")
+    ffmpeg: Titanium.Filesystem.getFile(projectRoot, "bin", "ffmpeg"),
+    ffmpegfs: Titanium.Filesystem.getFile(projectRoot, "bin", "ffmpegfs"),
+    qtfaststart: Titanium.Filesystem.getFile(projectRoot, "bin", "qtfaststart.py")
   };
   _.each(_.values(bins), function(bin) {
     if (!bin.isExecutable()) {
@@ -141,8 +144,15 @@ $(function(){
         {
           "id": "owk93k",
           "type": "ENC",
-          "name": "libx264-ultrafast deinterlace",
-          "cmd": "{{ffmpeg}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif -y {{outfile}}",
+          "name": "ffmpeg ultrafast deinterlace",
+          "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif -y {{outfile}}",
+          "extension": "mp4"
+        },
+        {
+          "id": "lI3Us0",
+          "type": "ENC",
+          "name": "ffmepg hq deinterlace",
+          "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-hq.ffpreset -strict experimental -filter yadif -y {{outfile}}",
           "extension": "mp4"
         },
         {
@@ -350,6 +360,14 @@ $(function(){
           enccmd[i] = bins.ffmpeg;
           bin = "ffmpeg";
         }
+        else if (param === "{{ffmpegfs}}") {
+          //enccmd[i] = bins.ffmpegfs;
+          enccmd[i] = "ffmpegfs";
+          bin = "ffmpeg";
+        }
+        else if (param === "{{qtfaststart}}") {
+          enccmd[i] = bins.qtfaststart;
+        }
         else if (param === "{{infile}}") {
           enccmd[i] = infile.toString();
         }
@@ -361,7 +379,9 @@ $(function(){
         }
       });
 
-      this.process = Titanium.Process.createProcess(enccmd);
+      this.process = Titanium.Process.createProcess(enccmd, {
+        'PATH': binpath.toString() + ":/usr/bin:/bin"
+      });
       
       var x = this;
       
