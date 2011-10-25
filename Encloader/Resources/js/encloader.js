@@ -138,15 +138,13 @@ $(function(){
             Titanium.Filesystem.getDesktopDirectory()
           )
         },
-        /*
         {
           "id": "owk93k",
           "type": "ENC",
           "name": "libx264-ultrafast deinterlace",
-          "cmd": "{{ffmpeg}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif {{outfile}}",
+          "cmd": "{{ffmpeg}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif -y {{outfile}}",
           "extension": "mp4"
         },
-        */
         {
           "id": "ksh02I",
           "type": "ENC",
@@ -342,49 +340,75 @@ $(function(){
       var ffpresets = Titanium.Filesystem.getFile(projectRoot,
         "ffpresets").toString() + separator;
       var infile = this.infile;
-      /*
-      enccmd[0] = bins.handbrake;
-      enccmd[2] = this.infile.toString();
-      enccmd[4] = localpath.toString();
-      */
+      var bin = "handbrake";
       _.each(enccmd, function(param, i) {
         enccmd[i] = param.replace("{{ffpresets}}", ffpresets);
         if (param === "{{handbrake}}") {
           enccmd[i] = bins.handbrake;
         }
-        if (param === "{{ffmpeg}}") {
+        else if (param === "{{ffmpeg}}") {
           enccmd[i] = bins.ffmpeg;
+          bin = "ffmpeg";
         }
-        if (param === "{{infile}}") {
+        else if (param === "{{infile}}") {
           enccmd[i] = infile.toString();
         }
-        if (param === "{{outfile}}") {
+        else if (param === "{{outfile}}") {
           enccmd[i] = localpath.toString();
         }
-        if (param === "{{threads}}") {
+        else if (param === "{{threads}}") {
           enccmd[i] = Titanium.Platform.getProcessorCount() + "";
         }
       });
 
       this.process = Titanium.Process.createProcess(enccmd);
-      var rhandbrake = /\d\d?\.\d\d %/g;
-      rhandbrake.compile(rhandbrake);
       
       var x = this;
       
-      this.process.setOnReadLine(function(data) {
+      if (bin === "handbrake") {
         
-        var line = data.toString();
-        var percent = rhandbrake.exec(line);
-        if (!percent) {
-          return;
-        }
-        percent = percent[0];
-        percent = percent.substr(0, percent.length - 2) * 1;
+        var rhandbrake = /\d\d?\.\d\d %/g;
+        rhandbrake.compile(rhandbrake);
         
-        x.job.setPercent(percent);
-
-      });
+        this.process.setOnReadLine(function(data) {
+          
+          var line = data.toString();
+          var percent = rhandbrake.exec(line);
+          if (!percent) {
+            return;
+          }
+          percent = percent[0];
+          percent = percent.substr(0, percent.length - 2) * 1;
+          
+          x.job.setPercent(percent);
+        
+        });
+      
+      }
+      else if (bin === "ffmpeg") {
+        var duration_re = /Duration: (\d\d):(\d\d):(\d\d)\.(\d\d)/g;
+        var duration = 0;
+        var time_re = /time=(\d\d):(\d\d):(\d\d)\.(\d\d)/g;
+        var tcTupleToSeconds = function(tc) {
+          return tc[0]*60*60 + tc[1]*60 + tc[2]*1 + tc[3]*.01;
+        };
+        this.process.setOnReadLine(function(data) {
+          var line = data.toString();
+          if (!duration) {
+            var match = duration_re.exec(line);
+            if (match) {
+              duration = tcTupleToSeconds(match.slice(1));
+            }
+          }
+          else {
+            var match = time_re.exec(line);
+            if (match) {
+              var secs = tcTupleToSeconds(match.slice(1));
+              x.job.setPercent(secs / duration * 100);
+            }
+          }
+        });
+      }
       
       this.process.setOnExit(function() {
         
