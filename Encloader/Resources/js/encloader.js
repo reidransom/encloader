@@ -118,17 +118,21 @@ $(function(){
       s.html("");
     });
 
-    // Get preset data from ~/.encloader.js
     var sources = [];
-    var stream = Titanium.Filesystem.getFileStream(
-      Titanium.Filesystem.getUserDirectory() + separator + ".encloader.js"
+    
+    // Get preset data from ~/.encloader/presets.js
+    var presetFile = Titanium.Filesystem.getFile(
+      Titanium.Filesystem.getUserDirectory(), ".encloader", "presets.js"
     );
-    if (stream.open()) {
-      var data = stream.read(10000);
-      data = $.parseJSON($.trim(data));
-      sources = data;
+    if (presetFile.isFile()) {
+      var stream = Titanium.Filesystem.getFileStream(presetFile);
+      if (stream.open()) {
+        var data = stream.read(10000);
+        data = $.parseJSON($.trim(data));
+        sources = data;
+      }
+      stream.close();
     }
-    stream.close();
   
     sources.unshift({
       "name": "Built-in",
@@ -144,15 +148,22 @@ $(function(){
         {
           "id": "owk93k",
           "type": "ENC",
-          "name": "Ultrafast",
+          "name": "x264 Ultrafast",
           "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif -y {{outfile}}",
           "extension": "mp4"
         },
         {
           "id": "lI3Us0",
           "type": "ENC",
-          "name": "HQ",
+          "name": "x264 HQ",
           "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-hq.ffpreset -strict experimental -filter yadif -y {{outfile}}",
+          "extension": "mp4"
+        },
+        {
+          "id": "lI3Us0",
+          "type": "ENC",
+          "name": "x264 iphone",
+          "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-iphone.ffpreset -strict experimental -filter yadif -s 640x360 -y {{outfile}}",
           "extension": "mp4"
         }
       ]
@@ -347,7 +358,6 @@ $(function(){
           bin = "ffmpeg";
         }
         else if (param === "{{ffmpegfs}}") {
-          //enccmd[i] = bins.ffmpegfs;
           enccmd[i] = "ffmpegfs";
           bin = "ffmpeg";
         }
@@ -365,6 +375,7 @@ $(function(){
         }
       });
 
+      log.debug(enccmd);
       this.process = Titanium.Process.createProcess(enccmd, {
         'PATH': binpath.toString() + ":/usr/bin:/bin"
       });
@@ -400,6 +411,7 @@ $(function(){
         };
         this.process.setOnReadLine(function(data) {
           var line = data.toString();
+          log.debug(line);
           if (!duration) {
             var match = duration_re.exec(line);
             if (match) {
