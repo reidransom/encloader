@@ -9,4 +9,4 @@ settings.
 
 ## Downloads
 
-* [Mac OS 10.5+ (Intel)](https://github.com/downloads/reidransom/encloader/Encloader.app.zip)
+* [Latest](http://api.appcelerator.net/p/pages/app_page?token=h4sjKZn5)
