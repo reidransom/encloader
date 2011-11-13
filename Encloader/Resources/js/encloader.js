@@ -316,8 +316,10 @@ $(function(){
       }
 
       if (ospath.splitext(localpath)[1].slice(1) != this.encoder.extension) {
-        localpath = Titanium.Filesystem.getFile(ospath.splitext(localpath)[0] +
-          "." + this.encoder.extension);
+        //localpath = Titanium.Filesystem.getFile(ospath.splitext(localpath)[0] +
+        //  "." + this.encoder.extension);
+        localpath = Titanium.Filesystem.getFile(localpath.toString() + "." +
+          this.encoder.extension);
         if (uppath) {
           uppath = ospath.splitext(uppath)[0] + "." + this.encoder.extension;
         }
@@ -525,29 +527,3 @@ $(function(){
   
   
 });
-
-
-/*
-
-Settings: overwrite everything or fail on name collisions
-
-if UP
-  uppath and mvpath are from presets
-  if xtrapath is a file
-    localpath = desktop + xtrapathbasename
-    uppath = uppath + xtrapath
-  elif xtrapath is a directory
-    localpath = desktop + inputbasename
-    uppath = uppath + xtrapath + inputbasename
-  else
-    localpath = desktop + inputbasename
-    uppath = uppath + inputbasename
-else
-  if xtrapath is a file
-    localpath = mvpath + xtrapath
-  elif xtrapath is a directory
-    localpath = mvpath + xtrapath + inputbasename
-  else
-    localpath = mvpath + inputbasename
-
-*/
