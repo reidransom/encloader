@@ -223,6 +223,7 @@ $(function(){
       
       this.el_state = this.el.find("p.state");
       this.el_progress = this.el.find("div.progress-bar div");
+      this.el_output = this.el.find("div.output");
     
     },
 
@@ -240,6 +241,10 @@ $(function(){
     setState: function(val) {
       this.state = val;
       this.el_state.html(this.state);
+    },
+
+    addOutput: function(line) {
+      this.el_output.append(line + "<br />");
     }
     
   });
@@ -343,7 +348,8 @@ $(function(){
         this.job.setState("Folder does not exist.");
         return;
       }
-      
+     
+
       
       var enccmd = this.encoder.cmd.split(" ");
       var ffpresets = Titanium.Filesystem.getFile(projectRoot,
@@ -377,7 +383,6 @@ $(function(){
         }
       });
 
-      log.debug(enccmd);
       this.process = Titanium.Process.createProcess(enccmd, {
         'PATH': binpath.toString() + ":/usr/bin:/bin"
       });
@@ -392,6 +397,9 @@ $(function(){
         this.process.setOnReadLine(function(data) {
           
           var line = data.toString();
+
+          x.job.addOutput(line);
+
           var percent = rhandbrake.exec(line);
           if (!percent) {
             return;
@@ -412,8 +420,11 @@ $(function(){
           return tc[0]*60*60 + tc[1]*60 + tc[2]*1 + tc[3]*.01;
         };
         this.process.setOnReadLine(function(data) {
+          
           var line = data.toString();
-          log.debug(line);
+          
+          x.job.addOutput(line);
+          
           if (!duration) {
             var match = duration_re.exec(line);
             if (match) {

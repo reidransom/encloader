@@ -200,6 +200,14 @@ textarea.dropzone {
   width: 0%;
   height: 2px;
 }
+.jobs > div div.output {
+  font-family: monospace;
+  font-size: 80%;
+  height: 3em;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-top: 5px;
+}
 header#top {
   margin-bottom: 1em;
 }
@@ -218,6 +226,6 @@ header#top {
   display: inline;
   float: left;
   overflow: hidden;
-  width: 340px;
+  width: 480px;
   margin: 0 5px;
 }
