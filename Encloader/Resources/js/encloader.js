@@ -245,6 +245,7 @@ $(function(){
 
     addOutput: function(line) {
       this.el_output.append(line + "<br />");
+      this.el_output[0].scrollTop = this.el_output[0].scrollHeight;
     }
     
   });
