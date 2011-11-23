@@ -1,5 +1,7 @@
 $(function(){
 
+  var JOBS = 3;
+  
   // Cache filesystem separator
   var separator = Titanium.Filesystem.getSeparator();
 
@@ -93,6 +95,7 @@ $(function(){
     handbrake: Titanium.Filesystem.getFile(projectRoot, "bin", "HandBrakeCLI"),
     ffmpeg: Titanium.Filesystem.getFile(projectRoot, "bin", "ffmpeg"),
     ffmpegfs: Titanium.Filesystem.getFile(projectRoot, "bin", "ffmpegfs"),
+    dnx175mxf: Titanium.Filesystem.getFile(projectRoot, "bin", "dnx175mxf"),
     qtfaststart: Titanium.Filesystem.getFile(projectRoot, "bin", "qtfaststart.py")
   };
   _.each(_.values(bins), function(bin) {
@@ -149,23 +152,40 @@ $(function(){
           "id": "owk93k",
           "type": "ENC",
           "name": "x264 Ultrafast",
-          "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif -y {{outfile}}",
-          "extension": "mp4"
+          "cmd": '{{ffmpegfs}} -i "{{infile}}" -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-ultrafast.ffpreset -strict experimental -filter yadif -y "{{outfile}}"',
+          "extension": ".mp4"
         },
         {
           "id": "lI3Us0",
           "type": "ENC",
           "name": "x264 HQ",
-          "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-hq.ffpreset -strict experimental -filter yadif -y {{outfile}}",
-          "extension": "mp4"
+          "cmd": '{{ffmpegfs}} -i "{{infile}}" -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-hq.ffpreset -strict experimental -filter yadif -y "{{outfile}}"',
+          "extension": ".mp4"
         },
         {
           "id": "lI3Us0",
           "type": "ENC",
           "name": "x264 iphone",
           "cmd": "{{ffmpegfs}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-iphone.ffpreset -strict experimental -filter yadif -s 640x360 -y {{outfile}}",
-          "extension": "mp4"
+          "extension": ".mp4"
+        },
+        {
+          "id": "zIs82L",
+          "type": "ENC",
+          "name": "DNx175 MXF",
+          "cmd": "{{dnx175mxf}} -i {{infile}} -o {{outfile}} -t {{threads}}",
+          "extension": ""
         }
+        /*{
+          "id": "H8s9Ja",
+          "type": "Q",
+          "name": "queue",
+          "cmd": [
+            "{{ffmpeg}} -i {{infile}} -threads {{threads}} -vcodec libx264 -fpre {{ffpresets}}libx264-iphone.ffpreset -strict experimental -filter yadif -s 640x360 -y {{outfile}}",
+            "{{qtfaststart}} {{outfile}}"
+          ],
+          "extension": "mp4"
+        }*/
       ]
     });
 
@@ -202,7 +222,35 @@ $(function(){
   // Retrieve presets and render selects
   window.Presets = getPresets();
   
-  window.Jobs = [];
+  var JobQueue = Class.$extend({
+  
+    __init__: function() {
+      this.queue = [];
+      this.finished = 0;
+      this.working = 0;
+      this.max_working = 3;
+      var x = this;
+      this.handle = subscribe("/job/finished", function() {
+        x.finished++;
+        x.working--;
+        var i = x.finished + x.working;
+        if (x.queue.length > i) {
+          x.queue[i].launch();
+          x.working++;
+        }
+      });
+    },
+
+    addJob: function(job) {
+      this.queue.push(job);
+      if (this.working < this.max_working) {
+        job.launch();
+        this.working++;
+      }
+    }
+  
+  });
+  var jobq = JobQueue();
   
   var JobBase = Class.$extend({
 
@@ -250,6 +298,7 @@ $(function(){
     
   });
   
+      
   /*
 
     Todo: write a titanium function that executes a command line program.
@@ -274,9 +323,9 @@ $(function(){
       var defaultpath = Titanium.Filesystem.getDesktopDirectory();
       
       var xtrapath = path;
+      
       var localpath = "";
       var uppath = "";
-      
       if (this.uploader.hasOwnProperty("host")) {
         // uploader is an FTP
         var uppath = "";
@@ -321,23 +370,23 @@ $(function(){
         }
       }
 
-      if (ospath.splitext(localpath)[1].slice(1) != this.encoder.extension) {
-        //localpath = Titanium.Filesystem.getFile(ospath.splitext(localpath)[0] +
-        //  "." + this.encoder.extension);
-        localpath = Titanium.Filesystem.getFile(localpath.toString() + "." +
-          this.encoder.extension);
+      if ("." + ospath.splitext(localpath)[1].slice(1) != this.encoder.extension) {
+        localpath = Titanium.Filesystem.getFile(localpath.toString() + this.encoder.extension);
         if (uppath) {
-          uppath = ospath.splitext(uppath)[0] + "." + this.encoder.extension;
+          uppath = ospath.splitext(uppath)[0] + this.encoder.extension;
         }
       }
 
-      this.job = JobBase(ospath.basename(localpath));
+      this.localpath = localpath;
+      this.uppath = uppath;
+
+      this.job = JobBase(ospath.basename(this.localpath));
       $("div.jobs").prepend(this.job.el);
       
       
       // Check if files already exist
       // todo: check if remote file exists
-      if (localpath.exists()) {
+      if (this.localpath.exists()) {
         this.job.setState("File already exists.");
         return;
       }
@@ -345,12 +394,12 @@ $(function(){
 
       // Check if target directory actually exists
       // todo: check if target remote directory actually exists
-      if (!Titanium.Filesystem.getFile(ospath.split(localpath)[0]).isDirectory()) {
+      if (!Titanium.Filesystem.getFile(ospath.split(this.localpath)[0]).isDirectory()) {
         this.job.setState("Folder does not exist.");
         return;
       }
      
-
+      this.queue = [];
       
       var enccmd = this.encoder.cmd.split(" ");
       var ffpresets = Titanium.Filesystem.getFile(projectRoot,
@@ -359,6 +408,7 @@ $(function(){
       var bin = "handbrake";
       _.each(enccmd, function(param, i) {
         enccmd[i] = param.replace("{{ffpresets}}", ffpresets);
+        enccmd[i] = param.replace("{{outfile}}", localpath.toString());
         if (param === "{{handbrake}}") {
           enccmd[i] = bins.handbrake;
         }
@@ -368,22 +418,24 @@ $(function(){
         }
         else if (param === "{{ffmpegfs}}") {
           enccmd[i] = "ffmpegfs";
+          enccmd[2] = '"' + infile.toString() + '"';
+          bin = "ffmpeg";
+        }
+        else if (param === "{{dnx175mxf}}") {
+          enccmd[i] = "dnx175mxf";
           bin = "ffmpeg";
         }
         else if (param === "{{qtfaststart}}") {
           enccmd[i] = bins.qtfaststart;
-        }
-        else if (param === "{{infile}}") {
-          enccmd[i] = infile.toString();
-        }
-        else if (param === "{{outfile}}") {
-          enccmd[i] = localpath.toString();
         }
         else if (param === "{{threads}}") {
           enccmd[i] = Titanium.Platform.getProcessorCount() + "";
         }
       });
 
+  //var ProcessBase = Class.$extend({
+    
+  //});
       this.process = Titanium.Process.createProcess(enccmd, {
         'PATH': binpath.toString() + ":/usr/bin:/bin"
       });
@@ -447,6 +499,7 @@ $(function(){
         x.job.setPercent(100);
         if (x.uploader.type === "MV") {
           x.job.setState("Done.");
+          publish("/job/finished", []);
           return;
         }
         x.job.setState("Done. (task 1 of 2)");
@@ -475,6 +528,7 @@ $(function(){
         upprocess.setOnExit(function() {
           x.job.setState("Done.");
           x.job.setPercent(100);
+          publish("/job/finished", []);
         });
         
         x.job.setState("Uploading... (task 2 of 2)");
@@ -483,35 +537,27 @@ $(function(){
       
       });
       
-      if (x.uploader.type === "MV") {
+      
+      //this.process.launch();
+      
+    },
+
+    launch: function() {
+      
+      if (this.uploader.type === "MV") {
         this.job.setState("Encoding...");
       }
       else {
         this.job.setState("Encoding... (task 1 of 2)");
       }
-      this.process.launch();
       
+      this.process.launch();
     },
 
-    getAutoOutfile: function(path) {
-      var desktop = Titanium.Filesystem.getDesktopDirectory();
-      var basename = _(this.infile.toString().split(separator)).last();
-      basename = basename.substring(
-        0, basename.length - this.infile.extension().length - 1
-      );
-      var outfile = Titanium.Filesystem.getFile(
-        desktop, basename + "." + this.encoder.extension
-      );
-      var i = 1;
-      while (outfile.exists()) {
-        outfile = Titanium.Filesystem.getFile(
-          desktop, basename + "-" + i + "." + this.encoder.extension
-        );
-        i = i + 1;
-      }
-      return outfile;
+    getState: function() {
+      return this.job.state;
     }
-  
+
   });
 
   
@@ -525,9 +571,12 @@ $(function(){
         var encoder_id = select.encoders.val();
         var uploader_id = select.uploaders.val();
         var path = $("#path").val();
+        
         _(files.split("\n")).each(function(file) {
-          Jobs.push(Job(file, encoder_id, uploader_id, path));
+          var j = Job(file, encoder_id, uploader_id, path);
+          jobq.addJob(j);
         });
+        
       }
     }, 500);
   

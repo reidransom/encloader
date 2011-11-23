@@ -229,3 +229,18 @@ header#top {
   width: 690px;
   margin: 0 5px;
 }
+#console {
+  display: inline;
+  float: left;
+  overflow: hidden;
+  width: 690px;
+  margin: 0 5px;
+  background-color: #222;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-family: monospace;
+  font-size: 80%;
+  height: 15em;
+  overflow-y: auto;
+}

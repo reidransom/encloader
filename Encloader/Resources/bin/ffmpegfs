@@ -1,4 +1,4 @@
 #!/bin/bash
 
 ffmpeg $*
-qtfaststart.py "${@: -1}"
+qtfaststart.py ${@: -1}

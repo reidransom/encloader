@@ -96,6 +96,7 @@ textarea.dropzone {
 //////////
 
 // Specify the number of columns and set column and gutter widths
+// set body width to cols*colwidth + (cols+1)*gutterwidth + 35
 @columns: 13;
 @column-width: 60;
 @gutter-width: 10;
@@ -110,17 +111,28 @@ textarea.dropzone {
 
 // header
 header#top {
-	margin-bottom: 1em;
+  margin-bottom: 1em;
 }
 
 // main column & sidebar
 #one {
-	.column(3);
+  .column(3);
   background-color: #222;
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 10px;
 }
 #two {
-	.column(10);
+  .column(10);
+}
+#console {
+  .column(10);
+  background-color: #222;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-family: monospace;
+  font-size: 80%;
+  height: 15em;
+  overflow-y: auto;
 }
