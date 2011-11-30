@@ -186,6 +186,10 @@ textarea.dropzone {
 .jobs > div p.title {
   color: #fff;
 }
+.jobs > div p.title a.close {
+  float: right;
+  cursor: pointer;
+}
 .jobs > div p.state {
   font-size: 70%;
 }
@@ -207,6 +211,7 @@ textarea.dropzone {
   overflow-y: auto;
   overflow-x: hidden;
   margin-top: 5px;
+  display: none;
 }
 header#top {
   margin-bottom: 1em;
