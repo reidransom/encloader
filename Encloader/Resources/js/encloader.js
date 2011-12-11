@@ -2,101 +2,6 @@ $(function(){
 
   var JOBS = 3;
   
-  // Cache filesystem separator
-  var separator = Titanium.Filesystem.getSeparator();
-
-  // Use mustache-style templating
-  _.templateSettings = {
-    interpolate : /\{\{(.+?)\}\}/g
-  };
-
-  // Simple html tag building
-  var html = {
-    
-    option: function(value, html) {
-      return '<option value="' + value + '">' + html + '</option>';
-    }
-  
-  };
-
-  // Python-like path functions
-  var ospath = {
-    
-    basename: function(filename) {
-      return _(filename.toString().split(separator)).last();
-    },
-
-    join: function(list) {
-      return list.join(separator);
-    },
-
-    split: function(filename) {
-      filename = filename.toString();
-      var i = filename.lastIndexOf(separator);
-      if (i === -1) {
-        return [filename, ""];
-      }
-      return [filename.slice(0, i), filename.slice(i)];
-    },
-    
-    splitext: function(filename) {
-      filename = filename.toString();
-      var i = filename.lastIndexOf(".");
-      if ((i === -1) || (i < filename.lastIndexOf("/"))) {
-        // There is no file extension
-        return [filename, ""];
-      }
-      return [filename.slice(0, i), filename.slice(i)];
-    },
-
-    tempDir: Titanium.Filesystem.createTempDirectory()
-
-  };
-
-  var random = {
-    
-    integer: function(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    },
-    
-    string: function(length) {
-      var string = "";
-      var chars = "_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      while (string.length < length) {
-        string += chars[this.integer(0, 62)];
-      }
-      return string;
-    }
-  
-  };
-      
-  var getNewFile = function(path) {
-    var rootext = ospath.splitext(path.toString());
-    var outfile = Titanium.Filesystem.getFile(path);
-    var i = 1;
-    while (outfile.exists()) {
-      outfile = Titanium.Filesystem.getFile(
-        rootext[0] + "-" + i + rootext[1]
-      );
-      i = i + 1;
-    }
-    return outfile;
-  }
-
-  var projectRoot = Titanium.App.appURLToPath("app://");
-  
-  Titanium.UI.setIcon(Titanium.Filesystem.getFile(projectRoot, "img",
-    "encloader.png").toString());
-  Titanium.UI.setDockIcon(Titanium.Filesystem.getFile(projectRoot, "img",
-    "encloader.icns").toString());
-  
-  var binpath = Titanium.Filesystem.getFile(projectRoot, "bin");
-  _.each(binpath.getDirectoryListing(), function(file) {
-    if (!file.isExecutable()) {
-      Titanium.Process.createProcess(["/bin/chmod", "755", file.toString()]).launch();
-    }
-  });
-  
   // Cache selects
   var select = {
     encoders: $("select.encoders"),
@@ -105,9 +10,7 @@ $(function(){
 
   var getPresets = function() {
     
-    var presets = {
-    };
-      
+    var presets = {};
     
     // Clear the select elements
     _(select).each(function(s) {
@@ -211,16 +114,6 @@ $(function(){
       this.finished = 0;
       this.working = 0;
       this.max_working = 3;
-      var x = this;
-      this.handle = subscribe("/job/finished", function() {
-        x.finished++;
-        x.working--;
-        var i = x.finished + x.working;
-        if (x.queue.length > i) {
-          x.queue[i].launch();
-          x.working++;
-        }
-      });
     },
 
     addJob: function(job) {
@@ -410,36 +303,6 @@ $(function(){
   
   };
       
-  // Returns Titanium.Filesystem.File outfile
-  var getOutputFile_bak = function(infile, xtrapath, extension) {
-    
-    var outfile = [Titanium.Filesystem.getDesktopDirectory().toString()];
-    
-    if (xtrapath) {
-      outfile.push(xtrapath);
-    }
-    
-    // If no basename is specified, use the input file basename.
-    if ((!xtrapath) || (xtrapath.slice(-1) == '/')) {
-      // If the extension is wrong, replace it.
-      if (infile.slice(infile.lastIndexOf(".")) != extension) {
-        infile = infile.slice(0, infile.lastIndexOf(".")) + extension;
-      }
-      outfile.push(ospath.basename(infile));
-    }
-    
-    outfile = Titanium.Filesystem.getFile(outfile);
-    
-    // If the extension is wrong, append it.
-    var outext = outfile.extension();
-    if ("." + outext != extension) {
-      outfile = Titanium.Filesystem.getFile(outfile.toString() + extension);
-    }
-    
-    return outfile;
-  
-  };
-      
   var mapTemplate = function(list, context) {
     // Substitute placeholders in command arguments
     return _.map(list, function(item) {
@@ -531,6 +394,16 @@ $(function(){
     job.current.kill();
   });
   
+  subscribe("/job/finished", function(jq) {
+    jq.finished++;
+    jq.working--;
+    var i = jq.finished + jq.working;
+    if (jq.queue.length > i) {
+      jq.queue[i].launch();
+      jq.working++;
+    }
+  });
+
   subscribe("/process/finished", function(process) {
     
     // If there is another process to run... launch it.
@@ -550,7 +423,7 @@ $(function(){
       });
       
       // Let the job queue know this finished
-      publish("/job/finished", []);
+      publish("/job/finished", [jobq]);
     
     }
   });
@@ -583,240 +456,5 @@ $(function(){
   };
   initDropzone($("textarea.dropzone"));
   
-  var Job = Class.$extend({
-  
-    __init__: function(infile, encoder_id, uploader_id, path) {
-      
-      this.infile = Titanium.Filesystem.getFile(infile);
-      this.encoder = Presets[encoder_id];
-      this.uploader = Presets[uploader_id];
-      this.xfered = 0;
-      this.filesize = 0;
 
-      // this is where files get encoded to by default, it should be user-definable.
-      var defaultpath = Titanium.Filesystem.getDesktopDirectory();
-      
-      var xtrapath = path;
-      
-      var localpath = "";
-      var uppath = "";
-      if (this.uploader.hasOwnProperty("host")) {
-        // uploader is an FTP
-        var uppath = "";
-        if (this.uploader.hasOwnProperty("path")) {
-          uppath = this.uploader.path;
-        }
-        if (xtrapath) {
-          if (xtrapath.slice(-1) === "/") {
-            // xtrapath is a directory
-            localpath = Titanium.Filesystem.getFile(defaultpath,
-              ospath.basename(infile));
-            uppath = uppath + xtrapath + ospath.basename(infile);
-          }
-          else {
-            // xtrapath is a file
-            localpath = Titanium.Filesystem.getFile(defaultpath,
-              ospath.basename(xtrapath));
-            uppath = uppath + xtrapath;
-          }
-        }
-        else {
-          // no xtrapath
-          localpath = Titanium.Filesystem.getFile(defaultpath,
-            ospath.basename(infile));
-          uppath = uppath + ospath.basename(infile);
-        }
-      }
-      else {
-        // uploader is a local MV
-        if (xtrapath) {
-          if (xtrapath.charAt(xtrapath.length - 1) == '/') {
-            localpath = Titanium.Filesystem.getFile(this.uploader.path, xtrapath,
-              ospath.basename(infile));
-          }
-          else {
-            localpath = Titanium.Filesystem.getFile(this.uploader.path, xtrapath);
-          }
-        }
-        else {
-          localpath = Titanium.Filesystem.getFile(this.uploader.path,
-            ospath.basename(infile));
-        }
-      }
-
-      if ("." + ospath.splitext(localpath)[1].slice(1) != this.encoder.extension) {
-        localpath = Titanium.Filesystem.getFile(localpath.toString() + this.encoder.extension);
-        if (uppath) {
-          uppath = ospath.splitext(uppath)[0] + this.encoder.extension;
-        }
-      }
-
-      this.localpath = localpath;
-      this.uppath = uppath;
-
-      this.job = JobBase(ospath.basename(this.localpath));
-      $("div.jobs").prepend(this.job.el);
-      
-      
-      // Check if files already exist
-      // todo: check if remote file exists
-      if (this.localpath.exists()) {
-        this.job.setState("File already exists.");
-        return;
-      }
-
-
-      // Check if target directory actually exists
-      // todo: check if target remote directory actually exists
-      if (!Titanium.Filesystem.getFile(ospath.split(this.localpath)[0]).isDirectory()) {
-        this.job.setState("Folder does not exist.");
-        return;
-      }
-     
-      this.queue = [];
-      
-      var enccmd = this.encoder.cmd.split(" ");
-      
-      var ffpresets = Titanium.Filesystem.getFile(projectRoot,
-        "ffpresets").toString() + separator;
-      
-      var bin = "handbrake";
-      
-      var subs = {
-        ffpresets: ffpresets,
-        outfile: localpath.toString(),
-        infile: infile.toString(),
-        threads: Titanium.Platform.getProcessorCount() + ""
-      };
-      enccmd = _.map(enccmd, function(arg) {
-        return _.template(arg)(subs);
-      });
-      
-      this.job.addOutput(enccmd);
-      
-      this.process = Titanium.Process.createProcess(enccmd, {
-        'PATH': binpath.toString() + ":/usr/bin:/bin"
-      });
-      
-      var x = this;
-      
-      if (bin === "handbrake") {
-        
-        var rhandbrake = /\d\d?\.\d\d %/g;
-        rhandbrake.compile(rhandbrake);
-        
-        this.process.setOnReadLine(function(data) {
-          
-          var line = data.toString();
-
-          x.job.addOutput(line);
-
-          var percent = rhandbrake.exec(line);
-          if (!percent) {
-            return;
-          }
-          percent = percent[0];
-          percent = percent.substr(0, percent.length - 2) * 1;
-          
-          x.job.setPercent(percent);
-        
-        });
-      
-      }
-      else if (bin === "ffmpeg") {
-        var duration_re = /Duration: (\d\d):(\d\d):(\d\d)\.(\d\d)/g;
-        var duration = 0;
-        var time_re = /time=(\d\d):(\d\d):(\d\d)\.(\d\d)/g;
-        var tcTupleToSeconds = function(tc) {
-          return tc[0]*60*60 + tc[1]*60 + tc[2]*1 + tc[3]*.01;
-        };
-        this.process.setOnReadLine(function(data) {
-          
-          var line = data.toString();
-          
-          x.job.addOutput(line);
-          
-          if (!duration) {
-            var match = duration_re.exec(line);
-            if (match) {
-              duration = tcTupleToSeconds(match.slice(1));
-            }
-          }
-          else {
-            var match = time_re.exec(line);
-            if (match) {
-              var secs = tcTupleToSeconds(match.slice(1));
-              x.job.setPercent(secs / duration * 100);
-            }
-          }
-        });
-      }
-      
-      this.process.setOnExit(function() {
-        
-        x.job.setPercent(100);
-        if (x.uploader.type === "MV") {
-          publish("/job/finished", []);
-          return;
-        }
-        
-        var upcmd = [
-          "curl",
-          "-T",
-          localpath.toString(),
-          "ftp://" + encodeURIComponent(x.uploader.user) + 
-          ":" + encodeURIComponent(x.uploader.passwd) +
-          "@" + x.uploader.host +
-          "/" + encodeURIComponent(uppath)
-        ];
-        
-        var upprocess = Titanium.Process.createProcess(upcmd);
-        upprocess.setOnReadLine(function(data) {
-          var line = data.toString();
-          var percent = parseInt(line);
-          if (isNaN(percent)) {
-            return;
-          }
-          if (x.job.percent < percent) {
-            x.job.setPercent(percent);
-          }
-        });
-        upprocess.setOnExit(function() {
-          x.job.setPercent(100);
-          publish("/job/finished", []);
-        });
-        
-        x.job.setState("Uploading... (task 2 of 2)");
-        x.job.setPercent(0);
-        upprocess.launch();
-      
-      });
-      
-      
-      //this.process.launch();
-      
-    },
-
-    launch: function() {
-      
-      if (this.uploader.type === "MV") {
-        this.job.setState("Encoding...");
-      }
-      else {
-        this.job.setState("Encoding... (task 1 of 2)");
-      }
-      
-      this.process.launch();
-    },
-
-    getState: function() {
-      return this.job.state;
-    }
-
-  });
-
-  
-
-  
-  
 });
