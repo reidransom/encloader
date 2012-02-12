@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ti:app xmlns:ti="http://ti.appcelerator.org">
+    <sdk-version>1.2.0.RC4</sdk-version>
     <guid>a2f652a8-8de6-4baa-9d41-ab636fbd0ef7</guid>
     <!-- These values are edited/maintained by Titanium Developer -->
     <id>com.reidransom.Encloader</id>
