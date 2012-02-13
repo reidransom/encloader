@@ -448,7 +448,11 @@ $(function(){
 
         // Get the currently selected form values.
         var encoder_id = select_presets.val();
-        var path = $("#path").val();
+        
+        // Removed the path input for interface simplification.
+        // Perhaps it will be re-enabled later or made optional in settings.
+        //var path = $("#path").val();
+        var path = "";
         
         // Create a job for each file that was dropped.
         _(files.split("\n")).each(function(file) {
