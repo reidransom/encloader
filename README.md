@@ -9,11 +9,11 @@ settings.
 
 ## Building
 
-[Packaging Titanium Apps on Your Own](http://developer.appcelerator.com/doc/desktop/packaging)
+See [Packaging Titanium Apps on Your Own](http://developer.appcelerator.com/doc/desktop/packaging).
 
 Example:
   
-  /Library/Application Support/Titanium/sdk/osx/1.2.0.RC4/tibuild.py -r -d ~/Desktop -t bundle ~/.db/Dropbox/src/encloader/Encloader
+    /Library/Application Support/Titanium/sdk/osx/1.2.0.RC4/tibuild.py -r -d ~/Desktop -t bundle encloader/Encloader
 
 ## Downloads
 
