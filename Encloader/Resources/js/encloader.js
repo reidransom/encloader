@@ -3,7 +3,7 @@ $(function(){
   var JOBS = 3;
   
   // Cache selects
-  var select_presets = $("select.encoders");
+  var select_presets = $("select.encoders"); // browser
 
   var getPresets = function() {
     
@@ -57,6 +57,20 @@ $(function(){
           ]
         },
         {
+          "id": "EVLijw",
+          "type": "ENC",
+          "name": "ProRes",
+          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "2", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
+          ]
+        },
+        {
+          "id": "8Z4XWc",
+          "type": "ENC",
+          "name": "ProRes HQ",
+          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "3", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
+          ]
+        },
+        {
           "id": "zIs82L",
           "type": "ENC",
           "name": "5D to DNx175 MXF",
@@ -100,7 +114,7 @@ $(function(){
   };
   
   // Retrieve presets and render selects
-  window.Presets = getPresets();
+  window.Presets = getPresets(); // browser
   
   var JobQueue = Class.$extend({
   
@@ -122,6 +136,7 @@ $(function(){
   });
   var jobq = JobQueue([]);
   
+  // browser
   var JobView = Class.$extend({
 
     __init__: function(job) {
@@ -425,6 +440,7 @@ $(function(){
   });
 
   // Wait for files to be dropped on the dropzone
+  // browser
   var initDropzone = function(dropzone) {
     
     window.setInterval(function() {
