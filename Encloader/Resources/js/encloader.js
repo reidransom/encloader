@@ -4,6 +4,7 @@ $(function(){
   
   // Cache selects
   var select_presets = $("select.encoders"); // browser
+  var input_combine_av = $("input.combine_av");
 
   var getPresets = function() {
     
@@ -36,7 +37,7 @@ $(function(){
           "type": "ENC",
           "name": "H.264 720p",
           "cmd": [
-            ["ffmpeg", "-i", "{{infile}}", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "256k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=1280:720', "-threads", "{{threads}}", "{{outfile}}-720p.mp4"],
+            ["ffmpeg", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "256k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=1280:720', "-threads", "{{threads}}", "{{outfile}}-720p.mp4"],
             ["qtfaststart.py", "{{outfile}}-720p.mp4"]
           ]
         },
@@ -45,7 +46,7 @@ $(function(){
           "type": "ENC",
           "name": "H.264 Mobile",
           "cmd": [
-            ["ffmpeg", "-i", "{{infile}}", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "192k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=640:360', "-threads", "{{threads}}", "{{outfile}}-mobile.mp4"],
+            ["ffmpeg", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "192k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=640:360', "-threads", "{{threads}}", "{{outfile}}-mobile.mp4"],
             ["qtfaststart.py", "{{outfile}}-mobile.mp4"]
           ]
         },
@@ -229,6 +230,7 @@ $(function(){
     
     __init__: function(cmd, job) {
       this.job = job; // todo: change el to job.view
+      this.command = cmd.join(" ");
       this.process = Titanium.Process.createProcess(cmd, {
         "PATH": binpath.toString() + ":/usr/bin:/bin"
       });
@@ -244,6 +246,7 @@ $(function(){
     },
 
     launch: function() {
+      Titanium.API.debug(this.command);
       this.el.addOutput(this.process.toString());
       this.process.launch();
       this.el.setState("Running...");
@@ -271,6 +274,7 @@ $(function(){
       };
       this.process.setOnReadLine(function(data){
         var line = data.toString();
+        Titanium.API.debug(line);
         p.el.addOutput(line);
         if (!duration) {
           var match = duration_re.exec(line);
@@ -329,9 +333,20 @@ $(function(){
       
       this.infile = infile;
       
+      var outfile = "";
+      if (typeof(infile) != 'string') {
+        // Assume infile is a list of files
+        outfile = getOutputFile(infile[0], xtrapath).toString();
+      }
+      else {
+        outfile = getOutputFile(infile, xtrapath).toString();
+      }
+      
       this.view = JobView(this);
 
-      var cmds = Presets[encoder_id].cmd;
+      var cmds = $.extend(true, [], Presets[encoder_id].cmd);
+      Titanium.API.debug('-a-' + JSON.stringify(cmds));
+
       
       // Killed flag
       this.killed = 0;
@@ -345,8 +360,8 @@ $(function(){
       this.tempdir = Titanium.Filesystem.getApplicationDataDirectory();
       this.tempbase = random.string(6);
       subs = {
-        infile: infile,
-        outfile: getOutputFile(infile, xtrapath).toString(),
+        infile: this.infile,
+        outfile: outfile,
         threads: Titanium.Platform.getProcessorCount() + "",
         tempfile: Titanium.Filesystem.getFile(this.tempdir, this.tempbase)
       };
@@ -376,6 +391,27 @@ $(function(){
         // todo: check against other files to be created during the batch.
       }, this);
 
+      
+      // When combining files, pass them all with -i.
+      if (typeof(infile) != "string") {
+        
+        var infileargs = [];
+        _.each(infile, function(f) {
+          infileargs.push(f);
+          infileargs.push("-i");
+        });
+        infile = infileargs.slice(0, -1);
+        
+        var len = cmds.length;
+        for (var i=0; i<len; i++) {
+          if (cmds[i][0] in {"ffmpeg":"", "ffmbc":""}) {
+            var n = _(cmds[i]).indexOf("{{infile}}");
+            cmds[i].splice(n, 1, infile); 
+            cmds[i] = _.flatten(cmds[i]);
+          }
+        }
+      }
+      
       // Subsitute the arguments.
       cmds = _.map(cmds, function(cmd) {
         return mapTemplate(cmd, subs);
@@ -452,27 +488,36 @@ $(function(){
 
         // Get the currently selected form values.
         var encoder_id = select_presets.val();
+
+        // Get combine_av checkbox value.
+        var combine_av = input_combine_av.is(':checked');
         
         // Removed the path input for interface simplification.
         // Perhaps it will be re-enabled later or made optional in settings.
         //var path = $("#path").val();
         var path = "";
         
-        // Create a job for each file that was dropped.
-        _(files.split("\n")).each(function(file) {
-          //var j = Job(file, encoder_id, uploader_id, path);
-          var j = NewJob(file, encoder_id, path);
-          log.debug(j.killed);
+        if (combine_av) {
+          // Create a single job combining files that were dropped.
+          var j = NewJob(files.split("\n"), encoder_id, path);
           if (!j.killed) {
             jobq.addJob(j);
           }
-        });
-        
+        }
+        else {
+          // Create a job for each file that was dropped.
+          _(files.split("\n")).each(function(file) {
+            var j = NewJob(file, encoder_id, path);
+            if (!j.killed) {
+              jobq.addJob(j);
+            }
+          });
+        }
+          
       }
     }, 500);
   
   };
   initDropzone($("textarea.dropzone"));
-  
 
 });
