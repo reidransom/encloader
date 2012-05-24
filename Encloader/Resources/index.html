@@ -53,6 +53,11 @@
         </div>
         <textarea class="dropzone"></textarea>
       </div>
+    
+      <label><h3>Source File</h3>
+        <input type="button" id="source-file-button" value="Choose..."></input>
+      </label>
+    
     </div>
     
     <div id="two">
@@ -71,6 +76,13 @@
 
   </div>
 	
+  <script type="text/template" id="future-job-template">
+    <p class="title">
+      {{url}}
+    </p>
+    <input type="button" class="source-file-button" value="Choose..."></input>
+  </script>
+  
   <script type="text/template" id="job-template">
     <p class="title">
       <a class="close">&times;</a>

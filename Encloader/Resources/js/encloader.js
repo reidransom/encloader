@@ -274,7 +274,7 @@ $(function(){
       };
       this.process.setOnReadLine(function(data){
         var line = data.toString();
-        Titanium.API.debug(line);
+        //Titanium.API.debug(line);
         p.el.addOutput(line);
         if (!duration) {
           var match = duration_re.exec(line);
@@ -345,9 +345,7 @@ $(function(){
       this.view = JobView(this);
 
       var cmds = $.extend(true, [], Presets[encoder_id].cmd);
-      Titanium.API.debug('-a-' + JSON.stringify(cmds));
 
-      
       // Killed flag
       this.killed = 0;
       
@@ -426,6 +424,15 @@ $(function(){
       // There is no currently running process
       this.current = null;
 
+    },
+
+    addUpload: function(bookmark_id, url) {
+      // todo: if there are multiple output files, check that url is a directory
+      _.each(this.outfiles, function(outfile) {
+        Titanium.API.debug(outfile);
+        var process = FFmpegProcess(['encloaderupload', outfile, bookmark_id, url], this); //INSECURE!!!
+        this.append(process);
+      }, this);
     },
 
     launch: function() {
@@ -519,5 +526,69 @@ $(function(){
   
   };
   initDropzone($("textarea.dropzone"));
+
+  var FutureJobView = Class.$extend({
+  
+    __init__: function(bookmark_id, preset_id, url) {
+      this.bookmark_id = bookmark_id;
+      this.preset_id = preset_id;
+      this.url = url;
+      
+      this.el = $(document.createElement("div"));
+      this.el.html(this.template({url: this.url}));
+
+      this.el_file = this.el.find("input.source-file-button");
+      
+      var x = this;
+      this.el_file.click(function() {
+        Titanium.UI.openFileChooserDialog(function(f) {
+          x.el.remove();
+          var j = NewJob(f, preset_id, "");
+          j.addUpload(x.bookmark_id, x.url);
+          if (!j.killed) {
+            jobq.addJob(j);
+          }
+        }, {multiple:true});
+      });
+      
+      $("div.jobs").prepend(this.el);
+
+    },
+    
+    template: _.template($("#future-job-template").html())
+  
+  });
+  
+  basichttp = Titanium.Process.createProcess(['basichttpserver'], {
+    "PATH": binpath.toString() + ":/usr/bin:/bin"
+  });
+  basichttp.setOnReadLine(function(data){
+    var s = data.toString();
+    var re = /GET \/encload\/(.+) HTTP\/1\.1/;
+    var match = re.exec(s)
+    if (match) {
+      match = match[1].split('/');
+      var bookmark_id = match[0];
+      var preset_id = match[1];
+      var url = match.slice(2).join('/');
+    }
+    if ((bookmark_id) && (preset_id) && (url)) {
+
+      FutureJobView(bookmark_id, preset_id, url);
+      
+    }
+  });
+  basichttp.launch();
+  Titanium.API.addEventListener(Titanium.EXIT, function(e) {
+    basichttp.kill();
+  })
+
+  $("#source-file-button").click(function() {
+    Titanium.UI.openFileChooserDialog(function(f) {
+      if (f.length) {
+        Titanium.API.debug(f);
+      }
+    }, {multiple:true});
+  });
 
 });
