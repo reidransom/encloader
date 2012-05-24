@@ -543,6 +543,9 @@ $(function(){
       this.el_file.click(function() {
         Titanium.UI.openFileChooserDialog(function(f) {
           x.el.remove();
+          if (f.length == 1) {
+            f = f[0];
+          }
           var j = NewJob(f, preset_id, "");
           j.addUpload(x.bookmark_id, x.url);
           if (!j.killed) {
