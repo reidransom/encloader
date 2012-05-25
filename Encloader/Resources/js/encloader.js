@@ -37,8 +37,7 @@ $(function(){
           "type": "ENC",
           "name": "H.264 720p",
           "cmd": [
-            ["ffmpeg", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "256k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=1280:720', "-threads", "{{threads}}", "{{outfile}}-720p.mp4"],
-            ["qtfaststart.py", "{{outfile}}-720p.mp4"]
+            "ffmbc", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "libfaac", "-ab", "128k", "-ac", "2", "-ar", "48k", "-strict", "experimental", "-vf", 'yadif,scale=1280:720', "{{outfile}}-720p.mp4"
           ]
         },
         {
@@ -587,9 +586,30 @@ $(function(){
   })
 
   $("#source-file-button").click(function() {
-    Titanium.UI.openFileChooserDialog(function(f) {
-      if (f.length) {
-        Titanium.API.debug(f);
+    Titanium.UI.openFileChooserDialog(function(files) {
+      if (files.length) {
+
+        var encoder_id = select_presets.val();
+        var combine_av = input_combine_av.is(':checked');
+        var path = '';
+
+        if (combine_av) {
+          // Create a single job combining files that were dropped.
+          var j = NewJob(files, encoder_id, path);
+          if (!j.killed) {
+            jobq.addJob(j);
+          }
+        }
+        else {
+          // Create a job for each file that was dropped.
+          _(files).each(function(file) {
+            var j = NewJob(file, encoder_id, path);
+            if (!j.killed) {
+              jobq.addJob(j);
+            }
+          });
+        }
+
       }
     }, {multiple:true});
   });
