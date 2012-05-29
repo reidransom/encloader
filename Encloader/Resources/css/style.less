@@ -6,6 +6,9 @@ body {
 	background-color: #333;
   color: #999;
 }
+a {
+  cursor: pointer;
+}
 div.bodywrap {
   padding: 10px 5px;
 }
@@ -23,6 +26,14 @@ h1 {
 h2 {
 	font-size: 1.5em;
 	color: #666;
+}
+h3 {
+  font-size: 1.25em;
+  margin-bottom: 0.25em;
+  margin-top: 0.5em;
+}
+h3.first {
+  margin-top: 0;
 }
 
 div.dropzone {
@@ -46,11 +57,14 @@ textarea.dropzone {
   height: 100%;
 }
 
+label {
+  /*
+  padding: 0;
+  padding-bottom: 0.5em;
+  display: block;
+  */
+}
 #one {
-  label {
-    padding: 5px 0;
-    display: block;
-  }
   select, input {
     width: 100%;
     box-sizing: border-box;
@@ -86,11 +100,11 @@ textarea.dropzone {
   div.output {
     font-family: monospace;
     font-size: 80%;
-    height: 3em;
+    height: 5em;
     overflow-y: auto;
     overflow-x: hidden;
     margin-top: 5px;
-    display: none;
+    display: block;
   }
 }
  
@@ -140,4 +154,21 @@ header#top {
   font-size: 80%;
   height: 15em;
   overflow-y: auto;
+}
+
+#preferences-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  float: right;
+  img {
+    width: 100%;
+  }
+}
+
+.preferences-box {
+  padding: 20px 30px;
+  h3 {
+    margin-left: -10px;
+  }
 }

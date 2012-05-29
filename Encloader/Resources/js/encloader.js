@@ -1,10 +1,10 @@
 $(function(){
 
   var JOBS = 3;
-  
+
   // Cache selects
   var select_presets = $("select.encoders"); // browser
-  var input_combine_av = $("input.combine_av");
+  //var input_combine_av = $("input.combine_av");
 
   var getPresets = function() {
     
@@ -148,7 +148,8 @@ $(function(){
       
       this.el = $(document.createElement("div"));
       this.el.html(this.template({
-        title: ospath.basename(this.job.infile),
+        //title: ospath.basename(this.job.infile),
+        title: this.job.outfile,
         state: this.state,
         percent: this.percent
       }));
@@ -298,7 +299,8 @@ $(function(){
   // Returns Titanium.Filesystem.File outfile
   var getOutputFile = function(infile, xtrapath) {
     
-    var outfile = [Titanium.Filesystem.getDesktopDirectory().toString()];
+    //var outfile = [Titanium.Filesystem.getDesktopDirectory().toString()];
+    var outfile = [prefs.output_folder];
     
     if (xtrapath) {
       outfile.push(xtrapath);
@@ -340,6 +342,7 @@ $(function(){
       else {
         outfile = getOutputFile(infile, xtrapath).toString();
       }
+      this.outfile = outfile;
       
       this.view = JobView(this);
 
@@ -496,14 +499,14 @@ $(function(){
         var encoder_id = select_presets.val();
 
         // Get combine_av checkbox value.
-        var combine_av = input_combine_av.is(':checked');
+        //var combine_av = input_combine_av.is(':checked');
         
         // Removed the path input for interface simplification.
         // Perhaps it will be re-enabled later or made optional in settings.
         //var path = $("#path").val();
         var path = "";
         
-        if (combine_av) {
+        if (prefs.multiple == 'combine') {
           // Create a single job combining files that were dropped.
           var j = NewJob(files.split("\n"), encoder_id, path);
           if (!j.killed) {
@@ -590,10 +593,10 @@ $(function(){
       if (files.length) {
 
         var encoder_id = select_presets.val();
-        var combine_av = input_combine_av.is(':checked');
+        //var combine_av = input_combine_av.is(':checked');
         var path = '';
 
-        if (combine_av) {
+        if (prefs.multiple == 'combine') {
           // Create a single job combining files that were dropped.
           var j = NewJob(files, encoder_id, path);
           if (!j.killed) {
@@ -614,4 +617,60 @@ $(function(){
     }, {multiple:true});
   });
 
+  Shadowbox.init({
+    skipSetup: true
+  });
+  
+  var openBox = function(template, subs, options) {
+    Shadowbox.open({
+      content: _.template(template)(subs),
+      player: 'html',
+      width: 500,
+      height: 400,
+      options: options
+    });
+  }
+  
+  var Preferences = Class.$extend({
+  
+    __init__: function() {
+      this.multiple = 'separate';
+      this.output_folder = Titanium.Filesystem.getDesktopDirectory().toString();
+      var x = this;
+      $("#preferences-icon").click(function() {
+        var checked = ' checked="checked"';
+        openBox($("#preferences-template").html(), {
+          output_folder: x.output_folder,
+          multi_separate: (x.multiple == 'separate') ? checked : '',
+          multi_combine: (x.multiple == 'combine') ? checked : ''
+        }, {
+          onFinish: function() {
+            $('#output-folder-button').click(function() {
+              Titanium.UI.openFolderChooserDialog(function(files) {
+                if (files.length) {
+                  x.setOutputFolder(files[0]);
+                }
+              }, {multiple:false});
+            });
+            $('input:radio[name=multiple-pref]').change(function() {
+              var val = $('input:radio[name=multiple-pref]:checked').val();
+              x.setMultiple(val);
+            });
+          }
+        });
+      });
+    },
+
+    setOutputFolder: function(path) {
+      this.output_folder = path;
+      $("#output-folder-span").html(path);
+    },
+
+    setMultiple: function(val) {
+      this.multiple = val;
+    }
+
+  });
+  window.prefs = Preferences();
+  
 });

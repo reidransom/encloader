@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="js/blackbird/blackbird.css">
     <script src="js/blackbird/blackbird.js"></script>
     
+    <!-- Shadowbox.js -->
+    <link rel="stylesheet" href="js/shadowbox/shadowbox.css">
+    <script src="js/shadowbox/shadowbox.js"></script>
+
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/style.css">
 	
@@ -34,33 +38,20 @@
     -->
 
     <div id="one">
-      <label><h3>Preset</h3>
+
+      <a id="preferences-icon"><img src="img/preferences.png"></a><br style="clear:both" />
+
+      <h3 class="first">Preset</h3>
         <select class="encoders">
         </select>
-      </label>
-      <label><h3>Combine Audio/Video</h3><!-- replace this with an "autodetect single stream files" preset setting -->
-        <input type="checkbox" class="combine_av" value="true" />
-      </label>
-      <!--
-      <label><h3>Path</h3>
-        <input type="text" id="path" />
-      </label>
-      <div class="dropzone">
-        <div>
-          <img src="img/down-arrow.png" /><br />
-          <p>Drop Files Here</p>
-        </div>
-        <textarea class="dropzone"></textarea>
-      </div>
-      -->
     
-      <label><h3>Source File</h3>
+      <h3>Source File</h3>
         <input type="button" id="source-file-button" value="Choose..."></input>
-      </label>
-    
+
     </div>
     
     <div id="two">
+      
       <div class="jobs">
         <!--
         <div>
@@ -88,11 +79,21 @@
       <a class="close">&times;</a>
       {{title}}
     </p>
+    <div class="output">
+    </div>
     <p class="state">{{state}}</p>
     <div class="progress-bar">
       <div>&nbsp;</div>
     </div>
-    <div class="output">
+  </script>
+
+  <script type="text/template" id="preferences-template">
+    <div class="preferences-box">
+      <h3 class="first">Output Folder</h3>
+        <input type="button" id="output-folder-button" value="Choose..."></input> <span id="output-folder-span">{{output_folder}}</span>
+      <h3>Multiple Files</h3>
+        <label><input type="radio" name="multiple-pref" value="separate"{{multi_separate}}> Process Separately</input></label><br />
+        <label><input type="radio" name="multiple-pref" value="combine"{{multi_combine}}> Combine</input></label>
     </div>
   </script>
 
