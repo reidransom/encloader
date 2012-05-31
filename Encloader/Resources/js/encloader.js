@@ -33,44 +33,41 @@ $(function(){
       "name": "Built-in",
       "presets": [
         {
-          "id": "e8U1qZ",
+          "id": "skiw82",
           "type": "ENC",
-          "name": "H.264 720p",
-          "cmd": [
-            "ffmbc", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "libfaac", "-ab", "128k", "-ac", "2", "-ar", "48k", "-strict", "experimental", "-vf", 'yadif,scale=1280:720', "{{outfile}}-720p.mp4"
+          "name": "iOS 16x9",
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-acodec", "libmp3lame", "-ab", "128k", "-vcodec", "libx264", "-b", "1M", "-coder", "0", "-bf", "0", "-refs", "1", "-weightb", "0", "-8x8dct", "0", "-level", "30", "-maxrate", "10000000", "-bufsize", "10000000", "-vf", "yadif,scale=640:360", "-aspect", "16:9", "{{outfile}}-ios169.mov"
           ]
         },
         {
-          "id": "k8Ea25",
+          "id": "cdje92",
           "type": "ENC",
-          "name": "H.264 Mobile",
-          "cmd": [
-            ["ffmpeg", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "192k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=640:360', "-threads", "{{threads}}", "{{outfile}}-mobile.mp4"],
-            ["qtfaststart.py", "{{outfile}}-mobile.mp4"]
+          "name": "iOS 4x3",
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-acodec", "libmp3lame", "-ab", "128k", "-vcodec", "libx264", "-b", "1M", "-coder", "0", "-bf", "0", "-refs", "1", "-weightb", "0", "-8x8dct", "0", "-level", "30", "-maxrate", "10000000", "-bufsize", "10000000", "-vf", "yadif,scale=480:360", "-aspect", "4:3", "{{outfile}}-ios43.mov"
           ]
         },
         {
           "id": "8wI2L9",
           "type": "ENC",
           "name": "Animation",
-          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "qtrle", "-g", "1", "-acodec", "pcm_s16le", "{{outfile}}-animation.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "qtrle", "-g", "1", "-acodec", "pcm_s16le", "{{outfile}}-animation.mov"
           ]
         },
         {
           "id": "EVLijw",
           "type": "ENC",
           "name": "ProRes",
-          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "2", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "2", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
           ]
         },
         {
           "id": "8Z4XWc",
           "type": "ENC",
           "name": "ProRes HQ",
-          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "3", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "3", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
           ]
-        },
-        {
+        }
+        /*{
           "id": "zIs82L",
           "type": "ENC",
           "name": "5D to DNx175 MXF",
@@ -80,7 +77,7 @@ $(function(){
             ["ffmpeg", "-i", "{{tempfile}}.mov", "-vn", "-acodec", "pcm_s16le", "{{tempfile}}.wav"],
             ["writeavidmxf", "--prefix", "{{outfile}}", "--film23.976", "--DNxHD1080p175", "{{tempfile}}.m2v", "--wavpcm", "{{tempfile}}.wav"]
           ],
-        }
+        }*/
       ]
     });
 
