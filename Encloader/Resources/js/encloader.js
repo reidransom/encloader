@@ -6,6 +6,23 @@ $(function(){
   var select_presets = $("select.encoders"); // browser
   //var input_combine_av = $("input.combine_av");
 
+  // Get bookmarks from ~/.encloader/bookmarks.js
+  var getConfig = function(path) {
+    var data = {};
+    var file = Titanium.Filesystem.getFile(
+      Titanium.Filesystem.getUserDirectory(), ".encloader", path
+    );
+    if (file.isFile()) {
+      var stream = Titanium.Filesystem.getFileStream(file);
+      if (stream.open()) {
+        data = stream.read(10000);
+        data = $.parseJSON($.trim(data));
+      }
+      stream.close();
+    }
+    return data;
+  };
+  
   var getPresets = function() {
     
     var presets = {};
@@ -292,6 +309,18 @@ $(function(){
   
   });
   // todo: register this process type
+
+  var UploadProcess = ProcessBase.$extend({
+    __init__: function(cmd, job) {
+      this.$super(cmd, job);
+      var p = this;
+      this.process.setOnReadLine(function(data) {
+        var line = data.toString();
+        p.el.addOutput(line + "% uploaded");
+        p.el.setPercent(line * 1.0);
+      });
+    }
+  });
   
   // Returns Titanium.Filesystem.File outfile
   var getOutputFile = function(infile, xtrapath) {
@@ -429,7 +458,7 @@ $(function(){
       // todo: if there are multiple output files, check that url is a directory
       _.each(this.outfiles, function(outfile) {
         Titanium.API.debug(outfile);
-        var process = FFmpegProcess(['encloaderupload', outfile, bookmark_id, url], this); //INSECURE!!!
+        var process = UploadProcess(['EncloaderHelper', outfile, bookmark_id, url], this);
         this.append(process);
       }, this);
     },
@@ -561,18 +590,21 @@ $(function(){
   
   });
   
+  /*Titanium.include('basehttp.py');
   basichttp = Titanium.Process.createProcess(['basichttpserver'], {
     "PATH": binpath.toString() + ":/usr/bin:/bin"
   });
   basichttp.setOnReadLine(function(data){
     var s = data.toString();
+    Titanium.API.debug("xxx" + s);
     var re = /GET \/encload\/(.+) HTTP\/1\.1/;
     var match = re.exec(s)
     if (match) {
       match = match[1].split('/');
       var bookmark_id = match[0];
-      var preset_id = match[1];
-      var url = match.slice(2).join('/');
+      var preset_id = select_presets.val();
+      //var preset_id = match[1];
+      var url = match.slice(1).join('/');
     }
     if ((bookmark_id) && (preset_id) && (url)) {
 
@@ -583,19 +615,37 @@ $(function(){
   basichttp.launch();
   Titanium.API.addEventListener(Titanium.EXIT, function(e) {
     basichttp.kill();
-  })
+  })*/
 
+  var bookmarks = getConfig('bookmarks.js');
+  Titanium.API.debug(bookmarks);
+
+  var validateUploadURL = function(url) {
+    if (!url) {
+      return [];
+    }
+    var key = _.find(_.keys(bookmarks), function(k) {
+      return (url.indexOf(bookmarks[k]['url']) == 0);
+    });
+    var path = url.slice(bookmarks[key]['url'].length);
+    return [key, path];
+  };
+  
   $("#source-file-button").click(function() {
     Titanium.UI.openFileChooserDialog(function(files) {
       if (files.length) {
 
         var encoder_id = select_presets.val();
+        var upload_url = validateUploadURL($("#upload-url-input").val());
         //var combine_av = input_combine_av.is(':checked');
         var path = '';
 
         if (prefs.multiple == 'combine') {
           // Create a single job combining files that were dropped.
           var j = NewJob(files, encoder_id, path);
+          if (upload_url) {
+            j.addUpload(upload_url[0], upload_url[1]);
+          }
           if (!j.killed) {
             jobq.addJob(j);
           }
@@ -604,6 +654,9 @@ $(function(){
           // Create a job for each file that was dropped.
           _(files).each(function(file) {
             var j = NewJob(file, encoder_id, path);
+            if (upload_url) {
+              j.addUpload(upload_url[0], upload_url[1]);
+            }
             if (!j.killed) {
               jobq.addJob(j);
             }

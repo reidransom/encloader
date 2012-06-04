@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+import sys
+import json
+import os.path
+from ftplib import FTP
+
+f = open(os.path.expanduser("~/.encloader/bookmarks.js"))
+bookmarks = json.loads(f.read())
+f.close()
+
+class UploadJob(object):
+  
+  def __init__(self, localpath, bookmark_id, remotepath):
+    self.localpath = localpath
+    self.bookmark = bookmarks[bookmark_id]
+    self.remotepath = remotepath
+    self.xfer = 0
+    self.size = os.path.getsize(localpath)
+
+  def upload(self):
+      f = open(self.localpath, "rb")
+      ftp = FTP(self.bookmark["server"],
+          self.bookmark["username"],
+          self.bookmark["password"])
+      ftp.storbinary('STOR %s' % self.remotepath, f, 16384, self.callback)
+      ftp.close()
+      f.close()
+
+  def callback(self, buff):
+      self.xfer = self.xfer + len(buff) - 1
+      f = float(self.xfer)*100/self.size
+      print("%f" % f)
+      sys.stdout.flush()
+
+x = UploadJob(sys.argv[1], sys.argv[2], sys.argv[3])
+x.upload()
