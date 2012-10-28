@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import time
+import time, sys
 import BaseHTTPServer
 
 HOST_NAME = 'localhost'
@@ -18,7 +18,22 @@ class BasicHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         s.end_headers()
         s.wfile.write("")
 
-if __name__ == '__main__':
+def keep_running():
+    return RUNER
+
+def run_while_true():
+    server_address = (HOST_NAME, PORT_NUMBER)
+    #httpd = BaseHTTPServer.HTTPServer(server_address, BaseHTTPServer.BaseHTTPRequestHandler)
+    httpd = BaseHTTPServer.HTTPServer(server_address, BasicHandler)
+    while keep_running():
+        httpd.handle_request()
+
+#def run():
+
+#if __name__ == '__main__':
+def run_server():
+    #run_while_true()
+    print('what the fuck');
     server_class = BaseHTTPServer.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), BasicHandler)
     #print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
@@ -29,3 +44,5 @@ if __name__ == '__main__':
     httpd.server_close()
     #print time.asctime(), "Server Stops - %s:%s" % (HOST_NAME, PORT_NUMBER)
 
+print('hello there')
+run_server()
