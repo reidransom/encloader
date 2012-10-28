@@ -7,6 +7,8 @@ interaction.  It retreives settings from a user-defined set of URLs.  This
 allows for a team of editors to easily share the same encoding and uploading
 settings.
 
+![100% FREE award granted by Softpedia](http://mac.softpedia.com/base_img/softpedia_free_award_f.gif)
+
 ## Building
 
 See [Packaging Titanium Apps on Your Own](http://developer.appcelerator.com/doc/desktop/packaging).
