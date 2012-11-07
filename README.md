@@ -7,6 +7,8 @@ interaction.  It retreives settings from a user-defined set of URLs.  This
 allows for a team of editors to easily share the same encoding and uploading
 settings.
 
+[Download](https://github.com/reidransom/encloader/downloads)
+
 <a href="http://mac.softpedia.com/get/Video/Encloader.shtml"><img src="http://mac.softpedia.com/base_img/softpedia_free_award_f.gif" alt="100% FREE award granted by Softpedia" /></a>
 
 ## Building
@@ -32,6 +34,3 @@ Example:
   * 1:1 HD
   * 20:1, 14:1, etc.
 
-## Downloads
-
-* [Latest](http://api.appcelerator.net/p/pages/app_page?token=h4sjKZn5)
