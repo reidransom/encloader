@@ -225,7 +225,7 @@ label {
 .jobs > div div.output {
   font-family: monospace;
   font-size: 80%;
-  height: 5em;
+  height: 15em;
   overflow-y: auto;
   overflow-x: hidden;
   margin-top: 5px;

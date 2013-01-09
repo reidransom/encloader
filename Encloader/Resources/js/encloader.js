@@ -172,11 +172,17 @@ $(function(){
       this.el_progress = this.el.find("div.progress-bar div");
       this.el_output = this.el.find("div.output");
       this.el_kill = this.el.find("a.close");
+      this.el_title_text = this.el.find("a.title-text");
 
       var jobview = this;
+      
       this.el_kill.click(function() {
         publish("/job/killed", [jobview.job]);
       });
+
+      this.el_title_text.click(function() {
+        jobview.el_output.toggle();
+      })
       
       $("div.jobs").prepend(this.el);
     
