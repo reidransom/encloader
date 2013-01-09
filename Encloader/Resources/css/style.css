@@ -107,10 +107,12 @@ section {
 body {
   line-height: 1;
 }
-ol, ul {
+ol,
+ul {
   list-style: none;
 }
-blockquote, q {
+blockquote,
+q {
   quotes: none;
 }
 blockquote:before,
@@ -188,7 +190,8 @@ label {
   */
 
 }
-#one select, #one input {
+#one select,
+#one input {
   width: 100%;
   box-sizing: border-box;
 }
@@ -226,7 +229,7 @@ label {
   overflow-y: auto;
   overflow-x: hidden;
   margin-top: 5px;
-  display: block;
+  display: none;
 }
 header#top {
   margin-bottom: 1em;

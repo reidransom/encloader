@@ -74,14 +74,14 @@ $(function(){
           "id": "EVLijw",
           "type": "ENC",
           "name": "ProRes",
-          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "2", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "std", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
           ]
         },
         {
           "id": "8Z4XWc",
           "type": "ENC",
           "name": "ProRes HQ",
-          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "3", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "hq", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
           ]
         }
         /*{
