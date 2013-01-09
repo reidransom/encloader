@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Encloader by reidransom</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/reidransom/encloader">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/reidransom/encloader/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/reidransom/encloader/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Encloader</h1>
+          <p>Encode and upload video quicker!</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/reidransom">reidransom</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>Encloader</h1>
+
+<h2>Description</h2>
+
+<p>Encloader is an application that encodes and uploads video with minimal user
+interaction.  It retreives settings from a user-defined set of URLs.  This 
+allows for a team of editors to easily share the same encoding and uploading
+settings.</p>
+
+<p><a href="https://github.com/reidransom/encloader/downloads">Download</a></p>
+
+<p><a href="http://mac.softpedia.com/get/Video/Encloader.shtml"><img src="http://mac.softpedia.com/base_img/softpedia_free_award_f.gif" alt="100% FREE award granted by Softpedia"></a></p>
+
+<h2>Building</h2>
+
+<p>See <a href="http://developer.appcelerator.com/doc/desktop/packaging">Packaging Titanium Apps on Your Own</a>.</p>
+
+<p>Example:</p>
+
+<pre><code>/Library/Application Support/Titanium/sdk/osx/1.2.0.RC4/tibuild.py -r -d ~/Desktop -t bundle encloader/Encloader
+</code></pre>
+
+<h2>Avid Codec Support</h2>
+
+<ul>
+<li>
+<p>Supported</p>
+
+<ul>
+<li>DNxHD</li>
+<li>ProRes</li>
+<li>DVCProHD</li>
+<li>MPEG</li>
+<li>DV</li>
+</ul>
+</li>
+<li>
+<p>Unsupported</p>
+
+<ul>
+<li>XDCAM</li>
+<li>AVC-Intra</li>
+<li>1:1 HD</li>
+<li>20:1, 14:1, etc.</li>
+</ul>
+</li>
+</ul><p>Todo:</p>
+
+<p>Implement qtkit reading of files</p>
+
+<ul>
+<li><a href="https://gist.github.com/1321570">https://gist.github.com/1321570</a></li>
+<li><a href="http://svn.red-bean.com/pyobjc/trunk/pyobjc/pyobjc-framework-QTKit/PyObjCTest/test_qtkitdefines.py">http://svn.red-bean.com/pyobjc/trunk/pyobjc/pyobjc-framework-QTKit/PyObjCTest/test_qtkitdefines.py</a></li>
+<li><a href="http://svn.akop.org/psp/trunk/vice/gfxoutputdrv/quicktimedrv.c">http://svn.akop.org/psp/trunk/vice/gfxoutputdrv/quicktimedrv.c</a></li>
+</ul>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
