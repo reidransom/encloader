@@ -1,3 +1,5 @@
+var Titanium = Ti;
+
 $(function() {
 
   // Use mustache-style templating

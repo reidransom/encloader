@@ -45,7 +45,12 @@ Thumbs.db
 *.wmv
 *.webm
 
-Encloader/Resources/bin/HandBrakeCLI
-Encloader/Resources/bin/ffmpeg
 Encloader/Resources/bin/ffmbc
 releases
+TODO.md
+Encloader/.settings/com.appcelerator.titanium.desktop.prefs
+Encloader/timanifest
+
+.AppleDouble
+
+ignore

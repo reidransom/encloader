@@ -1,11 +1,28 @@
 $(function(){
 
   var JOBS = 3;
-  
+
   // Cache selects
   var select_presets = $("select.encoders"); // browser
-  var input_combine_av = $("input.combine_av");
+  //var input_combine_av = $("input.combine_av");
 
+  // Get bookmarks from ~/.encloader/bookmarks.js
+  var getConfig = function(path) {
+    var data = {};
+    var file = Titanium.Filesystem.getFile(
+      Titanium.Filesystem.getUserDirectory(), ".encloader", path
+    );
+    if (file.isFile()) {
+      var stream = Titanium.Filesystem.getFileStream(file);
+      if (stream.open()) {
+        data = stream.read(10000);
+        data = $.parseJSON($.trim(data));
+      }
+      stream.close();
+    }
+    return data;
+  };
+  
   var getPresets = function() {
     
     var presets = {};
@@ -33,45 +50,41 @@ $(function(){
       "name": "Built-in",
       "presets": [
         {
-          "id": "e8U1qZ",
+          "id": "skiw82",
           "type": "ENC",
-          "name": "H.264 720p",
-          "cmd": [
-            ["ffmpeg", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "256k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=1280:720', "-threads", "{{threads}}", "{{outfile}}-720p.mp4"],
-            ["qtfaststart.py", "{{outfile}}-720p.mp4"]
+          "name": "iOS 16x9",
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-acodec", "libmp3lame", "-ab", "128k", "-vcodec", "libx264", "-b", "1M", "-coder", "0", "-bf", "0", "-refs", "1", "-weightb", "0", "-8x8dct", "0", "-level", "30", "-maxrate", "10000000", "-bufsize", "10000000", "-vf", "yadif,scale=640:360", "-aspect", "16:9", "{{outfile}}-ios169.mov"
           ]
         },
         {
-          "id": "k8Ea25",
+          "id": "cdje92",
           "type": "ENC",
-          "name": "H.264 Mobile",
-          "cmd": [
-            ["ffmpeg", "-i", "{{infile}}", "-vcodec", "libx264", "-crf", "25", "-flags", "+loop+mv4", "-cmp", "256", "-partitions", "+parti4x4+parti8x8+partp4x4+partp8x8+partb8x8", "-me_method", "hex", "-subq", "7", "-trellis", "1", "-refs", "5", "-bf", "0", "-flags2", "+mixed_refs", "-coder", "0", "-me_range", "16", "-g", "250", "-keyint_min", "25", "-sc_threshold", "40", "-i_qfactor", "0.71", "-qmin", "10", "-qmax", "51", "-acodec", "aac", "-b:a", "192k", "-ac", "2", "-r:a", "48k", "-strict", "experimental", "-vf", 'yadif,scale=640:360', "-threads", "{{threads}}", "{{outfile}}-mobile.mp4"],
-            ["qtfaststart.py", "{{outfile}}-mobile.mp4"]
+          "name": "iOS 4x3",
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-acodec", "libmp3lame", "-ab", "128k", "-vcodec", "libx264", "-b", "1M", "-coder", "0", "-bf", "0", "-refs", "1", "-weightb", "0", "-8x8dct", "0", "-level", "30", "-maxrate", "10000000", "-bufsize", "10000000", "-vf", "yadif,scale=480:360", "-aspect", "4:3", "{{outfile}}-ios43.mov"
           ]
         },
         {
           "id": "8wI2L9",
           "type": "ENC",
           "name": "Animation",
-          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "qtrle", "-g", "1", "-acodec", "pcm_s16le", "{{outfile}}-animation.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "qtrle", "-g", "1", "-acodec", "pcm_s16le", "{{outfile}}-animation.mov"
           ]
         },
         {
           "id": "EVLijw",
           "type": "ENC",
           "name": "ProRes",
-          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "2", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "std", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
           ]
         },
         {
           "id": "8Z4XWc",
           "type": "ENC",
           "name": "ProRes HQ",
-          "cmd": ["ffmpeg", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "3", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
+          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "hq", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
           ]
-        },
-        {
+        }
+        /*{
           "id": "zIs82L",
           "type": "ENC",
           "name": "5D to DNx175 MXF",
@@ -81,7 +94,7 @@ $(function(){
             ["ffmpeg", "-i", "{{tempfile}}.mov", "-vn", "-acodec", "pcm_s16le", "{{tempfile}}.wav"],
             ["writeavidmxf", "--prefix", "{{outfile}}", "--film23.976", "--DNxHD1080p175", "{{tempfile}}.m2v", "--wavpcm", "{{tempfile}}.wav"]
           ],
-        }
+        }*/
       ]
     });
 
@@ -149,7 +162,8 @@ $(function(){
       
       this.el = $(document.createElement("div"));
       this.el.html(this.template({
-        title: ospath.basename(this.job.infile),
+        //title: ospath.basename(this.job.infile),
+        title: this.job.outfile,
         state: this.state,
         percent: this.percent
       }));
@@ -274,7 +288,7 @@ $(function(){
       };
       this.process.setOnReadLine(function(data){
         var line = data.toString();
-        Titanium.API.debug(line);
+        //Titanium.API.debug(line);
         p.el.addOutput(line);
         if (!duration) {
           var match = duration_re.exec(line);
@@ -295,11 +309,24 @@ $(function(){
   
   });
   // todo: register this process type
+
+  var UploadProcess = ProcessBase.$extend({
+    __init__: function(cmd, job) {
+      this.$super(cmd, job);
+      var p = this;
+      this.process.setOnReadLine(function(data) {
+        var line = data.toString();
+        p.el.addOutput(line + "% uploaded");
+        p.el.setPercent(line * 1.0);
+      });
+    }
+  });
   
   // Returns Titanium.Filesystem.File outfile
   var getOutputFile = function(infile, xtrapath) {
     
-    var outfile = [Titanium.Filesystem.getDesktopDirectory().toString()];
+    //var outfile = [Titanium.Filesystem.getDesktopDirectory().toString()];
+    var outfile = [prefs.output_folder];
     
     if (xtrapath) {
       outfile.push(xtrapath);
@@ -341,13 +368,12 @@ $(function(){
       else {
         outfile = getOutputFile(infile, xtrapath).toString();
       }
+      this.outfile = outfile;
       
       this.view = JobView(this);
 
       var cmds = $.extend(true, [], Presets[encoder_id].cmd);
-      Titanium.API.debug('-a-' + JSON.stringify(cmds));
 
-      
       // Killed flag
       this.killed = 0;
       
@@ -428,6 +454,15 @@ $(function(){
 
     },
 
+    addUpload: function(bookmark_id, url) {
+      // todo: if there are multiple output files, check that url is a directory
+      _.each(this.outfiles, function(outfile) {
+        Titanium.API.debug(outfile);
+        var process = UploadProcess(['EncloaderHelper', outfile, bookmark_id, url], this);
+        this.append(process);
+      }, this);
+    },
+
     launch: function() {
       this.current = this.first;
       this.first.launch();
@@ -490,14 +525,14 @@ $(function(){
         var encoder_id = select_presets.val();
 
         // Get combine_av checkbox value.
-        var combine_av = input_combine_av.is(':checked');
+        //var combine_av = input_combine_av.is(':checked');
         
         // Removed the path input for interface simplification.
         // Perhaps it will be re-enabled later or made optional in settings.
         //var path = $("#path").val();
         var path = "";
         
-        if (combine_av) {
+        if (prefs.multiple == 'combine') {
           // Create a single job combining files that were dropped.
           var j = NewJob(files.split("\n"), encoder_id, path);
           if (!j.killed) {
@@ -520,4 +555,172 @@ $(function(){
   };
   initDropzone($("textarea.dropzone"));
 
+  var FutureJobView = Class.$extend({
+  
+    __init__: function(bookmark_id, preset_id, url) {
+      this.bookmark_id = bookmark_id;
+      this.preset_id = preset_id;
+      this.url = url;
+      
+      this.el = $(document.createElement("div"));
+      this.el.html(this.template({url: this.url}));
+
+      this.el_file = this.el.find("input.source-file-button");
+      
+      var x = this;
+      this.el_file.click(function() {
+        Titanium.UI.openFileChooserDialog(function(f) {
+          x.el.remove();
+          if (f.length == 1) {
+            f = f[0];
+          }
+          var j = NewJob(f, preset_id, "");
+          j.addUpload(x.bookmark_id, x.url);
+          if (!j.killed) {
+            jobq.addJob(j);
+          }
+        }, {multiple:true});
+      });
+      
+      $("div.jobs").prepend(this.el);
+
+    },
+    
+    template: _.template($("#future-job-template").html())
+  
+  });
+  
+  /*Titanium.include('basehttp.py');
+  basichttp = Titanium.Process.createProcess(['basichttpserver'], {
+    "PATH": binpath.toString() + ":/usr/bin:/bin"
+  });
+  basichttp.setOnReadLine(function(data){
+    var s = data.toString();
+    Titanium.API.debug("xxx" + s);
+    var re = /GET \/encload\/(.+) HTTP\/1\.1/;
+    var match = re.exec(s)
+    if (match) {
+      match = match[1].split('/');
+      var bookmark_id = match[0];
+      var preset_id = select_presets.val();
+      //var preset_id = match[1];
+      var url = match.slice(1).join('/');
+    }
+    if ((bookmark_id) && (preset_id) && (url)) {
+
+      FutureJobView(bookmark_id, preset_id, url);
+      
+    }
+  });
+  basichttp.launch();
+  Titanium.API.addEventListener(Titanium.EXIT, function(e) {
+    basichttp.kill();
+  })*/
+
+  var bookmarks = getConfig('bookmarks.js');
+  Titanium.API.debug(bookmarks);
+
+  var validateUploadURL = function(url) {
+    if (!url) {
+      return [];
+    }
+    var key = _.find(_.keys(bookmarks), function(k) {
+      return (url.indexOf(bookmarks[k]['url']) == 0);
+    });
+    var path = url.slice(bookmarks[key]['url'].length);
+    return [key, path];
+  };
+  
+  $("#source-file-button").click(function() {
+    Titanium.UI.openFileChooserDialog(function(files) {
+      if (files.length) {
+
+        var encoder_id = select_presets.val();
+        var upload_url = validateUploadURL($("#upload-url-input").val());
+        //var combine_av = input_combine_av.is(':checked');
+        var path = '';
+
+        if (prefs.multiple == 'combine') {
+          // Create a single job combining files that were dropped.
+          var j = NewJob(files, encoder_id, path);
+          if (upload_url) {
+            j.addUpload(upload_url[0], upload_url[1]);
+          }
+          if (!j.killed) {
+            jobq.addJob(j);
+          }
+        }
+        else {
+          // Create a job for each file that was dropped.
+          _(files).each(function(file) {
+            var j = NewJob(file, encoder_id, path);
+            if (upload_url) {
+              j.addUpload(upload_url[0], upload_url[1]);
+            }
+            if (!j.killed) {
+              jobq.addJob(j);
+            }
+          });
+        }
+
+      }
+    }, {multiple:true});
+  });
+
+  Shadowbox.init({
+    skipSetup: true
+  });
+  
+  var openBox = function(template, subs, options) {
+    Shadowbox.open({
+      content: _.template(template)(subs),
+      player: 'html',
+      width: 500,
+      height: 400,
+      options: options
+    });
+  }
+  
+  var Preferences = Class.$extend({
+  
+    __init__: function() {
+      this.multiple = 'separate';
+      this.output_folder = Titanium.Filesystem.getDesktopDirectory().toString();
+      var x = this;
+      $("#preferences-icon").click(function() {
+        var checked = ' checked="checked"';
+        openBox($("#preferences-template").html(), {
+          output_folder: x.output_folder,
+          multi_separate: (x.multiple == 'separate') ? checked : '',
+          multi_combine: (x.multiple == 'combine') ? checked : ''
+        }, {
+          onFinish: function() {
+            $('#output-folder-button').click(function() {
+              Titanium.UI.openFolderChooserDialog(function(files) {
+                if (files.length) {
+                  x.setOutputFolder(files[0]);
+                }
+              }, {multiple:false});
+            });
+            $('input:radio[name=multiple-pref]').change(function() {
+              var val = $('input:radio[name=multiple-pref]:checked').val();
+              x.setMultiple(val);
+            });
+          }
+        });
+      });
+    },
+
+    setOutputFolder: function(path) {
+      this.output_folder = path;
+      $("#output-folder-span").html(path);
+    },
+
+    setMultiple: function(val) {
+      this.multiple = val;
+    }
+
+  });
+  window.prefs = Preferences();
+  
 });
