@@ -107,10 +107,12 @@ section {
 body {
   line-height: 1;
 }
-ol, ul {
+ol,
+ul {
   list-style: none;
 }
-blockquote, q {
+blockquote,
+q {
   quotes: none;
 }
 blockquote:before,
@@ -173,7 +175,8 @@ textarea.dropzone {
   padding: 5px 0;
   display: block;
 }
-#one select, #one input {
+#one select,
+#one input {
   width: 100%;
   box-sizing: border-box;
 }
