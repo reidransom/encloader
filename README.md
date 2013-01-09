@@ -7,17 +7,13 @@ interaction.  It retreives settings from a user-defined set of URLs.  This
 allows for a team of editors to easily share the same encoding and uploading
 settings.
 
-[Download](https://github.com/reidransom/encloader/downloads)
+[Download for OSX](http://s3.amazonaws.com/rr_media/encloader-desktop/Encloader_v0.3.dmg)
 
 <a href="http://mac.softpedia.com/get/Video/Encloader.shtml"><img src="http://mac.softpedia.com/base_img/softpedia_free_award_f.gif" alt="100% FREE award granted by Softpedia" /></a>
 
 ## Building
 
-See [Packaging Titanium Apps on Your Own](http://developer.appcelerator.com/doc/desktop/packaging).
-
-Example:
-  
-    /Library/Application Support/Titanium/sdk/osx/1.2.0.RC4/tibuild.py -r -d ~/Desktop -t bundle encloader/Encloader
+[TideSDK](http://www.tidesdk.org/)
 
 ## Avid Codec Support
 
@@ -34,7 +30,7 @@ Example:
   * 1:1 HD
   * 20:1, 14:1, etc.
 
-Todo:
+## Todo:
 
 Implement qtkit reading of files
 

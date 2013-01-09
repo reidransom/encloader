@@ -5,12 +5,12 @@
     <!-- These values are edited/maintained by Titanium Developer -->
 <id>com.reidransom.Encloader</id>
 <name>Encloader</name>
-<version>0.1</version>
+<version>0.3</version>
 <publisher>reid</publisher>
 <url>http://reidransom.com</url>
 <description>not specified</description>
 <icon>encloader.png</icon>
-<copyright>2011 by reid</copyright>
+<copyright>2013 by reid</copyright>
     <!-- Window Definition - these values can be edited -->
     <window>
         <id>initial</id>
