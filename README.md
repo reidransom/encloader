@@ -34,3 +34,10 @@ Example:
   * 1:1 HD
   * 20:1, 14:1, etc.
 
+Todo:
+
+Implement qtkit reading of files
+
+* <https://gist.github.com/1321570>
+* <http://svn.red-bean.com/pyobjc/trunk/pyobjc/pyobjc-framework-QTKit/PyObjCTest/test_qtkitdefines.py>
+* <http://svn.akop.org/psp/trunk/vice/gfxoutputdrv/quicktimedrv.c>
