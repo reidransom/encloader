@@ -1,10 +1,86 @@
+if (typeof Object.create !== 'function') {
+  Object.create = function (o) {
+    var F = function() {};
+    F.prototype = o;
+    return new F();
+  };
+}
+
+window.encloader = {
+  globalPresetFile: Ti.Filesystem.getFile(Ti.Filesystem.getApplicationDataDirectory(), "global-presets.js"),
+  PresetList: {
+    init: function() {
+      var obj = Object.create(this);
+      obj.presets = [];
+      obj.el = $("#preset-list");
+      obj.updateGlobalPresets();
+      obj.addPresetFile(encloader.globalPresetFile);
+      return obj;
+    },
+    append: function(preset) {
+      var id = this.presets.length;
+      this.presets[id] = preset;
+      this.el.append('<option value="' + id + '">' + preset.name + '</option>');
+    },
+    addPresetObject: function(obj) {
+      if (Object.prototype.toString.call(obj) != '[object Array]') {
+        if (typeof obj === "object") {
+          obj = [obj];
+        }
+        else {
+          // type error
+        }
+      }
+      for (i = 0; i < obj.length; ++i) {
+        for (j = 0; j < obj[i].presets.length; j += 1) {
+          this.append(obj[i].presets[j]);
+        }
+      }
+    },
+    addPresetFile: function(file) {
+      var stream, data;
+      if (! file.isFile()) {
+        Ti.API.warn("Preset file does not exist: " + file);
+        return;
+      }
+      stream = Titanium.Filesystem.getFileStream(file);
+      if (stream.open()) {
+        data = stream.read(10000);
+        data = $.parseJSON($.trim(data));
+        this.addPresetObject(data);
+      }
+      stream.close();
+    },
+    updateGlobalPresets: function() {
+      var data, stream, client;
+      client = Ti.Network.createHTTPClient({});
+      client.setTimeout(3000);
+      client.open("GET", "http://s3.amazonaws.com/rr_media/encloader/global-presets.js", false);
+      client.send();
+      data = client.responseText;
+      if (data) {
+        stream = Ti.Filesystem.getFileStream(encloader.globalPresetFile);
+        if (stream.open(Ti.Filesystem.MODE_WRITE)) {
+          stream.write(data);
+        }
+        stream.close();
+      }
+      else {
+        if (! encloader.globalPresetFile.exists()) {
+          Ti.Filesystem.getFile(Ti.Filesystem.getApplicationDirectory(), "Resources", "js", "global-presets.js").copy(encloader.globalPresetFile);
+        }
+      }
+    }
+  }
+}
+
 $(function(){
+  
+  encloader.preset_list = encloader.PresetList.init();
+  encloader.preset_list.addPresetFile(Titanium.Filesystem.getFile(Titanium.Filesystem.getUserDirectory(), ".encloader", "presets.js"));
+  
 
   var JOBS = 3;
-
-  // Cache selects
-  var select_presets = $("select.encoders"); // browser
-  //var input_combine_av = $("input.combine_av");
 
   // Get bookmarks from ~/.encloader/bookmarks.js
   var getConfig = function(path) {
@@ -22,113 +98,6 @@ $(function(){
     }
     return data;
   };
-  
-  var getPresets = function() {
-    
-    var presets = {};
-    
-    // Clear the select elements
-    select_presets.html("");
-
-    var sources = [];
-    
-    // Get preset data from ~/.encloader/presets.js
-    var presetFile = Titanium.Filesystem.getFile(
-      Titanium.Filesystem.getUserDirectory(), ".encloader", "presets.js"
-    );
-    if (presetFile.isFile()) {
-      var stream = Titanium.Filesystem.getFileStream(presetFile);
-      if (stream.open()) {
-        var data = stream.read(10000);
-        data = $.parseJSON($.trim(data));
-        sources = data;
-      }
-      stream.close();
-    }
-  
-    sources.unshift({
-      "name": "Built-in",
-      "presets": [
-        {
-          "id": "skiw82",
-          "type": "ENC",
-          "name": "iOS 16x9",
-          "cmd": ["ffmbc", "-i", "{{infile}}", "-acodec", "libmp3lame", "-ab", "128k", "-vcodec", "libx264", "-b", "1M", "-coder", "0", "-bf", "0", "-refs", "1", "-weightb", "0", "-8x8dct", "0", "-level", "30", "-maxrate", "10000000", "-bufsize", "10000000", "-vf", "yadif,scale=640:360", "-aspect", "16:9", "{{outfile}}-ios169.mov"
-          ]
-        },
-        {
-          "id": "cdje92",
-          "type": "ENC",
-          "name": "iOS 4x3",
-          "cmd": ["ffmbc", "-i", "{{infile}}", "-acodec", "libmp3lame", "-ab", "128k", "-vcodec", "libx264", "-b", "1M", "-coder", "0", "-bf", "0", "-refs", "1", "-weightb", "0", "-8x8dct", "0", "-level", "30", "-maxrate", "10000000", "-bufsize", "10000000", "-vf", "yadif,scale=480:360", "-aspect", "4:3", "{{outfile}}-ios43.mov"
-          ]
-        },
-        {
-          "id": "8wI2L9",
-          "type": "ENC",
-          "name": "Animation",
-          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "qtrle", "-g", "1", "-acodec", "pcm_s16le", "{{outfile}}-animation.mov"
-          ]
-        },
-        {
-          "id": "EVLijw",
-          "type": "ENC",
-          "name": "ProRes",
-          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "std", "-acodec", "pcm_s16le", "{{outfile}}-prores.mov"
-          ]
-        },
-        {
-          "id": "8Z4XWc",
-          "type": "ENC",
-          "name": "ProRes HQ",
-          "cmd": ["ffmbc", "-i", "{{infile}}", "-vcodec", "prores", "-profile", "hq", "-acodec", "pcm_s16le", "{{outfile}}-proreshq.mov"
-          ]
-        }
-        /*{
-          "id": "zIs82L",
-          "type": "ENC",
-          "name": "5D to DNx175 MXF",
-          "cmd": [
-            ["ffmpeg", "-i", "{{infile}}", "-vcodec", "dnxhd", "-b:v", "175M", "-pix_fmt", "yuv422p", "-s", "1920x1080", "-acodec", "pcm_s16le", "-ar", "48000", "-ac", "2", "-threads", "{{threads}}", "-vf", "crop=in_w:in_h-8:0:0,scale=1920:1080", "{{tempfile}}.mov"],
-            ["ffmpeg", "-i", "{{tempfile}}.mov", "-an", "-vcodec", "copy", "{{tempfile}}.m2v"],
-            ["ffmpeg", "-i", "{{tempfile}}.mov", "-vn", "-acodec", "pcm_s16le", "{{tempfile}}.wav"],
-            ["writeavidmxf", "--prefix", "{{outfile}}", "--film23.976", "--DNxHD1080p175", "{{tempfile}}.m2v", "--wavpcm", "{{tempfile}}.wav"]
-          ],
-        }*/
-      ]
-    });
-
-    // Flatten sources
-    var addSource = function(source) {
-      _(source.presets).each(function(preset, i) {
-        preset["source"] = source.name;
-        preset["order"] = i;
-        select_presets.append(html.option(
-          preset.id,
-          preset.name
-        ));
-        presets[preset.id] = preset;
-      });
-    };
-    _(sources).each(function(source) {
-      if (_.isUndefined(source.name)) {
-        $.getJSON(source.url, function(data) {
-          _(source).extend(data);
-          addSource(source);
-        });
-      }
-      else {
-        addSource(source);
-      }
-    });
-    
-    // Return a flat object of all the presets
-    return presets;
-  
-  };
-  
-  // Retrieve presets and render selects
-  window.Presets = getPresets(); // browser
   
   var JobQueue = Class.$extend({
   
@@ -378,7 +347,8 @@ $(function(){
       
       this.view = JobView(this);
 
-      var cmds = $.extend(true, [], Presets[encoder_id].cmd);
+      //var cmds = $.extend(true, [], Presets[encoder_id].cmd);
+      var cmds = $.extend(true, [], encloader.preset_list.presets[encoder_id].cmd);
 
       // Killed flag
       this.killed = 0;
@@ -518,6 +488,7 @@ $(function(){
 
   // Wait for files to be dropped on the dropzone
   // browser
+  /*
   var initDropzone = function(dropzone) {
     
     window.setInterval(function() {
@@ -560,6 +531,7 @@ $(function(){
   
   };
   initDropzone($("textarea.dropzone"));
+  */
 
   var FutureJobView = Class.$extend({
   
@@ -641,7 +613,7 @@ $(function(){
     Titanium.UI.openFileChooserDialog(function(files) {
       if (files.length) {
 
-        var encoder_id = select_presets.val();
+        var encoder_id = $("#preset-list").val();
         var upload_url = validateUploadURL($("#upload-url-input").val());
         //var combine_av = input_combine_av.is(':checked');
         var path = '';
@@ -692,6 +664,7 @@ $(function(){
     __init__: function() {
       this.multiple = 'separate';
       this.output_folder = Titanium.Filesystem.getDesktopDirectory().toString();
+      this.repos = [];
       var x = this;
       $("#preferences-icon").click(function() {
         var checked = ' checked="checked"';
@@ -708,6 +681,11 @@ $(function(){
                 }
               }, {multiple:false});
             });
+            $('#add-repo-button').click(function() {
+              var repo_url = $('#add-repo-url-input').val();
+              x.repos.push(repo_url);
+              $('#repo-list').append("<p>" + repo_url + "</p>");
+            })
             $('input:radio[name=multiple-pref]').change(function() {
               var val = $('input:radio[name=multiple-pref]:checked').val();
               x.setMultiple(val);

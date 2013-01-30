@@ -41,15 +41,14 @@
 
       <a id="preferences-icon"><img src="img/preferences.png"></a><br style="clear:both" />
 
-      <h3 class="first">Preset</h3>
-        <select class="encoders">
-        </select>
-    
+      <h3>Presets</h3>
+      <select id="preset-list"></select>
+
       <h3>Upload URL <span style="font-size:50%">(optional)</span></h3>
-        <input type="text" id="upload-url-input" value=""></input>
+      <input type="text" id="upload-url-input" value=""></input>
 
       <h3>Source File</h3>
-        <input type="button" id="source-file-button" value="Choose..."></input>
+      <input type="button" id="source-file-button" value="Choose..."></input>
 
     </div>
     
@@ -92,11 +91,20 @@
 
   <script type="text/template" id="preferences-template">
     <div class="preferences-box">
+      
       <h3 class="first">Output Folder</h3>
         <input type="button" id="output-folder-button" value="Choose..."></input> <span id="output-folder-span">{{output_folder}}</span>
+      
+      <div style="display:none">
+      <h3>Preset Repositories</h3>
+        <div id="repo-list"></div>
+        <input type="text" id="add-repo-url-input" value=""></input>
+        <input type="button" id="add-repo-button" value="Add"></input>
       <h3>Multiple Files</h3>
         <label><input type="radio" name="multiple-pref" value="separate"{{multi_separate}}> Process Separately</input></label><br />
         <label><input type="radio" name="multiple-pref" value="combine"{{multi_combine}}> Combine</input></label>
+      </div>
+    
     </div>
   </script>
 
