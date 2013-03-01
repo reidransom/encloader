@@ -7,7 +7,7 @@ interaction.  It retreives settings from a user-defined set of URLs.  This
 allows for a team of editors to easily share the same encoding and uploading
 settings.
 
-[Download for OSX](http://s3.amazonaws.com/rr_media/encloader-desktop/Encloader_v0.3.dmg)
+[Download for OSX](http://s3.amazonaws.com/rr_media/encloader/Encloader.dmg)
 
 <a href="http://mac.softpedia.com/get/Video/Encloader.shtml"><img src="http://mac.softpedia.com/base_img/softpedia_free_award_f.gif" alt="100% FREE award granted by Softpedia" /></a>
 
