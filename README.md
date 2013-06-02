@@ -7,28 +7,13 @@ interaction.  It retreives settings from a user-defined set of URLs.  This
 allows for a team of editors to easily share the same encoding and uploading
 settings.
 
-[Download for OSX](http://s3.amazonaws.com/rr_media/encloader/Encloader.dmg)
+[Download from the homepage.](//encloader.com/)
 
 <a href="http://mac.softpedia.com/get/Video/Encloader.shtml"><img src="http://mac.softpedia.com/base_img/softpedia_free_award_f.gif" alt="100% FREE award granted by Softpedia" /></a>
 
 ## Building
 
 [TideSDK](http://www.tidesdk.org/)
-
-## Avid Codec Support
-
-* Supported
-  * DNxHD
-  * ProRes
-  * DVCProHD
-  * MPEG
-  * DV
-
-* Unsupported
-  * XDCAM
-  * AVC-Intra
-  * 1:1 HD
-  * 20:1, 14:1, etc.
 
 ## Todo:
 
