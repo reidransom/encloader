@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 import sys
 import json
@@ -10,7 +10,7 @@ bookmarks = json.loads(f.read())
 f.close()
 
 class UploadJob(object):
-  
+
   def __init__(self, localpath, bookmark_id, remotepath):
     self.localpath = localpath
     self.bookmark = bookmarks[bookmark_id]

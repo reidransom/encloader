@@ -58,7 +58,7 @@ window.encloader = {
       client.open("GET", "http://s3.amazonaws.com/rr_media/encloader/global-presets.js", false);
       client.send();
       data = client.responseText;
-      if (data) {
+      if (data && client.status === 200) {
         stream = Ti.Filesystem.getFileStream(encloader.globalPresetFile);
         if (stream.open(Ti.Filesystem.MODE_WRITE)) {
           stream.write(data);
@@ -75,10 +75,10 @@ window.encloader = {
 }
 
 $(function(){
-  
+
   encloader.preset_list = encloader.PresetList.init();
   encloader.preset_list.addPresetFile(Titanium.Filesystem.getFile(Titanium.Filesystem.getUserDirectory(), ".encloader", "presets.js"));
-  
+
 
   var JOBS = 3;
 
@@ -98,9 +98,9 @@ $(function(){
     }
     return data;
   };
-  
+
   var JobQueue = Class.$extend({
-  
+
     __init__: function() {
       this.queue = [];
       this.finished = 0;
@@ -115,20 +115,20 @@ $(function(){
         this.working++;
       }
     }
-  
+
   });
   var jobq = JobQueue([]);
-  
+
   // browser
   var JobView = Class.$extend({
 
     __init__: function(job) {
-      
+
       this.job = job;
-      
+
       this.percent = 0;
       this.state = "Pending...";
-      
+
       this.el = $(document.createElement("div"));
       this.el.html(this.template({
         //title: ospath.basename(this.job.infile),
@@ -136,7 +136,7 @@ $(function(){
         state: this.state,
         percent: this.percent
       }));
-      
+
       this.el_state = this.el.find("p.state");
       this.el_progress = this.el.find("div.progress-bar div");
       this.el_output = this.el.find("div.output");
@@ -144,7 +144,7 @@ $(function(){
       this.el_title_text = this.el.find("a.title-text");
 
       var jobview = this;
-      
+
       this.el_kill.click(function() {
         publish("/job/killed", [jobview.job]);
       });
@@ -152,9 +152,9 @@ $(function(){
       this.el_title_text.click(function() {
         jobview.el_output.toggle();
       })
-      
+
       $("div.jobs").prepend(this.el);
-    
+
     },
 
     template: _.template($("#job-template").html()),
@@ -162,7 +162,7 @@ $(function(){
     set: function(attr, val) {
       this[attr] = val;
     },
-    
+
     setPercent: function(val) {
       this.percent = val;
       this.el_progress.css({width: this.percent+"%"});
@@ -188,12 +188,12 @@ $(function(){
       this.el_output.append(line + "<br />");
       this.el_output[0].scrollTop = this.el_output[0].scrollHeight;
     }
-    
+
   });
-  
-      
+
+
   var LinkedList = Class.$extend({
-  
+
     __init__: function() {
       this.length = 0;
       this.first = null;
@@ -212,21 +212,27 @@ $(function(){
       }
       this.length++;
     }
-  
+
   });
-  
-  var ProcessBase = Class.$extend({
-    
+
+  var UploadProcess = Class.$extend({
+
     __init__: function(cmd, job) {
       this.job = job; // todo: change el to job.view
-      this.command = cmd.join(" ");
-      this.process = Titanium.Process.createProcess(cmd, {
-        "PATH": binpath.toString() + ":/usr/bin:/bin"
-      });
+      this.cmd = cmd;
+      this.command = this.cmd.join(" ");
       this.el = job.view;
+      this.setup();
+    },
+
+    setup: function() {
       var p = this;
+      this.process = Titanium.Process.createProcess(this.cmd, {
+        "PATH": binpath.toString()
+      });
       this.process.setOnReadLine(function(data){
         p.el.addOutput(data.toString());
+        p.el.setPercent(data.toString() * 1.0);
       });
       this.process.setOnExit(function() {
         p.el.setPercent(100);
@@ -235,10 +241,10 @@ $(function(){
     },
 
     launch: function() {
-      Titanium.API.debug(this.command);
+      console.log('[upload]');
       this.el.addOutput(this.process.toString());
       this.process.launch();
-      this.el.setState("Running...");
+      this.el.setState("Uploading...");
     },
 
     kill: function() {
@@ -248,23 +254,35 @@ $(function(){
 
   });
 
-  var FFmpegProcess = ProcessBase.$extend({
-    
+  var FFmpegProcess = Class.$extend({
+
     __init__: function(cmd, job) {
-      
-      this.$super(cmd, job);
-      
+
+      this.job = job; // todo: change el to job.view
+      this.cmd = cmd;
+      this.command = this.cmd.join(" ");
+      this.el = job.view;
+
+      this.process = Titanium.Process.createProcess(this.cmd, {
+        "PATH": binpath.toString()
+      });
+
       var p = this;
       var duration_re = /Duration: (\d\d):(\d\d):(\d\d)\.(\d\d)/g;
       var duration = 0;
       var time_re = /time=(\d\d):(\d\d):(\d\d)\.(\d\d)/g;
+      var qtreffail_re = /error opening alias:/g;
+      var qtreffail = false;
       var tcTupleToSeconds = function(tc) {
         return tc[0]*60*60 + tc[1]*60 + tc[2]*1 + tc[3]*.01;
       };
-      this.process.setOnReadLine(function(data){
+
+      function ffmbcOnReadLine (data) {
         var line = data.toString();
-        //Titanium.API.debug(line);
         p.el.addOutput(line);
+        if (qtreffail_re.exec(line)) {
+          qtreffail = true;
+        }
         if (!duration) {
           var match = duration_re.exec(line);
           if (match) {
@@ -278,47 +296,88 @@ $(function(){
             p.el.setPercent(secs / duration * 100);
           }
         }
-      });
-    
+      }
+
+      function ffmbcComplete () {
+        p.el.setPercent(100);
+        console.log('[encoded]');
+        publish("/process/finished", [p]);
+      }
+
+      this.process.setOnReadLine(ffmbcOnReadLine);
+
+      this.process.setOnExit(function () {
+        var selfcontqt_cmd,
+            selfcontqt_process,
+            tempfile;
+        //console.log('[rr] ' + p.process.getExitCode() + ' ' + qtreffail);
+        if ((p.process.getExitCode() === 1) && (qtreffail)) {
+          p.el.setState("Flattening QT reference...");
+          p.el.setPercent(0);
+          tempfile = Titanium.Filesystem.getFile(p.job.tempdir, p.job.tempbase) + '-selfcontained.mov';
+          selfcontqt_cmd = ['selfcontqt', p.job.infile, tempfile];
+          selfcontqt_process = Titanium.Process.createProcess(selfcontqt_cmd, {
+            "PATH": binpath.toString()
+          });
+          selfcontqt_process.setOnExit(function () {
+            var infile_index = p.cmd.indexOf('-i') + 1;
+            p.cmd[infile_index] = tempfile;
+
+            p.process = Titanium.Process.createProcess(p.cmd, {
+              "PATH": binpath.toString()
+            });
+
+            p.process.setOnReadLine(ffmbcOnReadLine);
+            p.process.setOnExit(ffmbcComplete);
+            p.launch();
+          });
+          selfcontqt_process.launch();
+        }
+        else {
+          ffmbcComplete();
+        }
+      })
+
+    },
+
+    launch: function() {
+      Titanium.API.debug(this.command);
+      this.el.addOutput(this.process.toString());
+      this.process.launch();
+      this.el.setState("Encoding...");
+    },
+
+    kill: function() {
+      this.process.kill();
+      this.el.setState("Canceled.");
     }
-  
+
+
   });
   // todo: register this process type
 
-  var UploadProcess = ProcessBase.$extend({
-    __init__: function(cmd, job) {
-      this.$super(cmd, job);
-      var p = this;
-      this.process.setOnReadLine(function(data) {
-        var line = data.toString();
-        p.el.addOutput(line + "% uploaded");
-        p.el.setPercent(line * 1.0);
-      });
-    }
-  });
-  
   // Returns Titanium.Filesystem.File outfile
   var getOutputFile = function(infile, xtrapath) {
-    
+
     //var outfile = [Titanium.Filesystem.getDesktopDirectory().toString()];
     var outfile = [prefs.output_folder];
-    
+
     if (xtrapath) {
       outfile.push(xtrapath);
     }
-    
+
     // If no basename is specified, use the input file basename.
     if ((!xtrapath) || (xtrapath.slice(-1) == '/')) {
       // Remove the file extension.
       infile = infile.slice(0, infile.lastIndexOf("."));
       outfile.push(ospath.basename(infile));
     }
-    
+
     outfile = Titanium.Filesystem.getFile(outfile);
     return outfile;
-  
+
   };
-      
+
   var mapTemplate = function(list, context) {
     // Substitute placeholders in command arguments
     return _.map(list, function(item) {
@@ -327,14 +386,14 @@ $(function(){
   }
 
   var NewJob = LinkedList.$extend({
-  
+
     __init__: function(infile, encoder_id, xtrapath) {
-      
+
       // A job is a list of processes
       this.$super();
-      
+
       this.infile = infile;
-      
+
       var outfile = "";
       if (typeof(infile) != 'string') {
         // Assume infile is a list of files
@@ -344,7 +403,7 @@ $(function(){
         outfile = getOutputFile(infile, xtrapath).toString();
       }
       this.outfile = outfile;
-      
+
       this.view = JobView(this);
 
       //var cmds = $.extend(true, [], Presets[encoder_id].cmd);
@@ -352,12 +411,12 @@ $(function(){
 
       // Killed flag
       this.killed = 0;
-      
+
       // Incase there is only one command, make a list of one command anyway.
       if (typeof(cmds[0]) === "string") {
         cmds = [cmds];
       }
-      
+
       // Create argument subsitution variables.
       this.tempdir = Titanium.Filesystem.getApplicationDataDirectory();
       this.tempbase = random.string(6);
@@ -367,7 +426,7 @@ $(function(){
         threads: Titanium.Platform.getProcessorCount() + "",
         tempfile: Titanium.Filesystem.getFile(this.tempdir, this.tempbase)
       };
-      
+
       // Get the outfiles and tempfiles
       this.outfiles = [];
       this.tempfiles = [];
@@ -382,7 +441,7 @@ $(function(){
       }, this);
       this.outfiles = _.uniq(this.outfiles);
       this.tempfiles = _.uniq(this.tempfiles);
-      
+
       // Make sure these files don't already exist.
       _.each(this.outfiles.concat(this.tempfiles), function(file) {
         file = Titanium.Filesystem.getFile(file);
@@ -393,27 +452,27 @@ $(function(){
         // todo: check against other files to be created during the batch.
       }, this);
 
-      
+
       // When combining files, pass them all with -i.
       if (typeof(infile) != "string") {
-        
+
         var infileargs = [];
         _.each(infile, function(f) {
           infileargs.push(f);
           infileargs.push("-i");
         });
         infile = infileargs.slice(0, -1);
-        
+
         var len = cmds.length;
         for (var i=0; i<len; i++) {
           if (cmds[i][0] in {"ffmpeg":"", "ffmbc":""}) {
             var n = _(cmds[i]).indexOf("{{infile}}");
-            cmds[i].splice(n, 1, infile); 
+            cmds[i].splice(n, 1, infile);
             cmds[i] = _.flatten(cmds[i]);
           }
         }
       }
-      
+
       // Subsitute the arguments.
       cmds = _.map(cmds, function(cmd) {
         return mapTemplate(cmd, subs);
@@ -445,13 +504,13 @@ $(function(){
     }
 
   });
-  
+
   subscribe("/job/killed", function(job) {
     job.killed = 1;
     job.view.setState("Cancelled.");
     job.current.kill();
   });
-  
+
   subscribe("/job/finished", function(jq) {
     jq.finished++;
     jq.working--;
@@ -463,26 +522,26 @@ $(function(){
   });
 
   subscribe("/process/finished", function(process) {
-    
+
     // If there is another process to run... launch it.
     if ((process.next) && (!process.job.killed)) {
       process.current = process.next;
       process.next.launch();
     }
-    
+
     else {
-      
+
       // There are no more currently running processes.
       process.current = null;
-      
+
       // Remove tempfiles
       _.each(process.job.tempfiles, function(file) {
         file.deleteFile();
       });
-      
+
       // Let the job queue know this finished
       publish("/job/finished", [jobq]);
-    
+
     }
   });
 
@@ -490,11 +549,11 @@ $(function(){
   // browser
   /*
   var initDropzone = function(dropzone) {
-    
+
     window.setInterval(function() {
       var files = dropzone.val();
       if (files) {
-        
+
         // Clear the dropzone value for the next batch of files to be dropped.
         dropzone.val("");
 
@@ -503,12 +562,12 @@ $(function(){
 
         // Get combine_av checkbox value.
         //var combine_av = input_combine_av.is(':checked');
-        
+
         // Removed the path input for interface simplification.
         // Perhaps it will be re-enabled later or made optional in settings.
         //var path = $("#path").val();
         var path = "";
-        
+
         if (prefs.multiple == 'combine') {
           // Create a single job combining files that were dropped.
           var j = NewJob(files.split("\n"), encoder_id, path);
@@ -525,26 +584,26 @@ $(function(){
             }
           });
         }
-          
+
       }
     }, 500);
-  
+
   };
   initDropzone($("textarea.dropzone"));
   */
 
   var FutureJobView = Class.$extend({
-  
+
     __init__: function(bookmark_id, preset_id, url) {
       this.bookmark_id = bookmark_id;
       this.preset_id = preset_id;
       this.url = url;
-      
+
       this.el = $(document.createElement("div"));
       this.el.html(this.template({url: this.url}));
 
       this.el_file = this.el.find("input.source-file-button");
-      
+
       var x = this;
       this.el_file.click(function() {
         Titanium.UI.openFileChooserDialog(function(f) {
@@ -559,15 +618,15 @@ $(function(){
           }
         }, {multiple:true});
       });
-      
+
       $("div.jobs").prepend(this.el);
 
     },
-    
+
     template: _.template($("#future-job-template").html())
-  
+
   });
-  
+
   /*Titanium.include('basehttp.py');
   basichttp = Titanium.Process.createProcess(['basichttpserver'], {
     "PATH": binpath.toString() + ":/usr/bin:/bin"
@@ -587,7 +646,7 @@ $(function(){
     if ((bookmark_id) && (preset_id) && (url)) {
 
       FutureJobView(bookmark_id, preset_id, url);
-      
+
     }
   });
   basichttp.launch();
@@ -608,7 +667,7 @@ $(function(){
     var path = url.slice(bookmarks[key]['url'].length);
     return [key, path];
   };
-  
+
   $("#source-file-button").click(function() {
     Titanium.UI.openFileChooserDialog(function(files) {
       if (files.length) {
@@ -648,7 +707,7 @@ $(function(){
   Shadowbox.init({
     skipSetup: true
   });
-  
+
   var openBox = function(template, subs, options) {
     Shadowbox.open({
       content: _.template(template)(subs),
@@ -658,9 +717,9 @@ $(function(){
       options: options
     });
   }
-  
+
   var Preferences = Class.$extend({
-  
+
     __init__: function() {
       this.multiple = 'separate';
       this.output_folder = Titanium.Filesystem.getDesktopDirectory().toString();
@@ -706,5 +765,5 @@ $(function(){
 
   });
   window.prefs = Preferences();
-  
+
 });
