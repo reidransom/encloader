@@ -241,7 +241,6 @@ $(function(){
     },
 
     launch: function() {
-      console.log('[upload]');
       this.el.addOutput(this.process.toString());
       this.process.launch();
       this.el.setState("Uploading...");
@@ -273,6 +272,7 @@ $(function(){
       var time_re = /time=(\d\d):(\d\d):(\d\d)\.(\d\d)/g;
       var qtreffail_re = /error opening alias:/g;
       var qtreffail = false;
+      var selfcontained_tempfile = Ti.Filesystem.getFile(Ti.Filesystem.getFile(p.job.tempdir, p.job.tempbase) + '-selfcontained.mov');
       var tcTupleToSeconds = function(tc) {
         return tc[0]*60*60 + tc[1]*60 + tc[2]*1 + tc[3]*.01;
       };
@@ -299,8 +299,11 @@ $(function(){
       }
 
       function ffmbcComplete () {
+        // if selfcontained_tempfile exists, delete it
+        if (selfcontained_tempfile.exists()) {
+          selfcontained_tempfile.deleteFile();
+        }
         p.el.setPercent(100);
-        console.log('[encoded]');
         publish("/process/finished", [p]);
       }
 
@@ -314,14 +317,13 @@ $(function(){
         if ((p.process.getExitCode() === 1) && (qtreffail)) {
           p.el.setState("Flattening QT reference...");
           p.el.setPercent(0);
-          tempfile = Titanium.Filesystem.getFile(p.job.tempdir, p.job.tempbase) + '-selfcontained.mov';
-          selfcontqt_cmd = ['selfcontqt', p.job.infile, tempfile];
+          selfcontqt_cmd = ['selfcontqt', p.job.infile, selfcontained_tempfile];
           selfcontqt_process = Titanium.Process.createProcess(selfcontqt_cmd, {
             "PATH": binpath.toString()
           });
           selfcontqt_process.setOnExit(function () {
             var infile_index = p.cmd.indexOf('-i') + 1;
-            p.cmd[infile_index] = tempfile;
+            p.cmd[infile_index] = selfcontained_tempfile;
 
             p.process = Titanium.Process.createProcess(p.cmd, {
               "PATH": binpath.toString()
