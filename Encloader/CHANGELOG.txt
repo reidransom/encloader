@@ -1,8 +1,0 @@
-## Version 0.1
-
-* Support for Mac OS 10.5 or later.
-* Encodes are done with handbrake.
-* Presets are read from ~/encloader.js or can be downloaded at application
-startup over http.
-* Uploades are done with curl.
-* Jobs are created one at a time but mulitple jobs can run concurrently.

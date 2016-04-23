@@ -1,0 +1,20 @@
+#!/bin/bash
+
+bower install
+
+base_url="http://reidransom-ffmpeg.s3.amazonaws.com/"
+platform="osx"
+ffmpeg_version="79800-g7b7c338"
+ffmpeg_dir="bin/${platform}/${ffmpeg_version}"
+ffmpeg_bin="bin/${platform}/${ffmpeg_version}/ffmpeg"
+mkdir -p $ffmpeg_dir
+if [[ ! -f ${ffmpeg_bin} ]]; then
+    curl -o ${ffmpeg_bin} ${base_url}${platform}/${ffmpeg_version}/ffmpeg
+    chmod 755 ${ffmpeg_bin}
+fi
+if [[ -f bin/ffmpeg ]]; then
+    rm bin/ffmpeg
+fi
+ln -s ${ffmpeg_bin} bin/ffmpeg
+
+echo "postinstall done!"

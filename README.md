@@ -1,24 +1,20 @@
 # Encloader
 
-## Description
+This is a minimal Electron application based on the [Quick Start Guide](http://electron.atom.io/docs/latest/tutorial/quick-start) within the Electron documentation.
 
-Encloader is an application that encodes and uploads video with minimal user
-interaction.  It retreives settings from a user-defined set of URLs.  This 
-allows for a team of editors to easily share the same encoding and uploading
-settings.
+## To Use
 
-[Download from the homepage.](//encloader.com/)
+To clone and run this repository you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
 
-<a href="http://mac.softpedia.com/get/Video/Encloader.shtml"><img src="http://mac.softpedia.com/base_img/softpedia_free_award_f.gif" alt="100% FREE award granted by Softpedia" /></a>
+```bash
+# Clone this repository
+git clone https://github.com/reidransom/encloader
+# Go into the repository
+cd encloader
+# Install dependencies and run the app
+npm install && npm start
+```
 
-## Building
+Learn more about Electron and its API in the [documentation](http://electron.atom.io/docs/latest).
 
-[TideSDK](http://www.tidesdk.org/)
-
-## Todo:
-
-Implement qtkit reading of files
-
-* <https://gist.github.com/1321570>
-* <http://svn.red-bean.com/pyobjc/trunk/pyobjc/pyobjc-framework-QTKit/PyObjCTest/test_qtkitdefines.py>
-* <http://svn.akop.org/psp/trunk/vice/gfxoutputdrv/quicktimedrv.c>
+#### License [(MIT)](LICENSE)

@@ -1,0 +1,20 @@
+{
+  "name": "encloader",
+  "version": "2.0.0",
+  "description": "Encode and upload video",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js",
+    "postinstall": "./postinstall"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reidransom/encloader.git"
+  },
+  "author": "reidransom",
+  "license": "MIT",
+  "homepage": "http://encloader.com/",
+  "devDependencies": {
+    "electron-prebuilt": "^0.37.0"
+  }
+}

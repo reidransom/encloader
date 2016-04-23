@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-tibuild.py -r -d ~/build -t bundle Encloader
